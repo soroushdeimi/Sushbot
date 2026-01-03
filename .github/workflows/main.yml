@@ -493,24 +493,25 @@ jobs:
           echo "  - Tests:     ${{ needs.test.result }}"
           echo "  - Docker:    ${{ needs.docker-build.result }}"
           
+          # Success if all jobs skipped (docs-only change via paths-ignore)
+          if [[ "${{ needs.lint.result }}" == "skipped" ]] && \
+             [[ "${{ needs.test.result }}" == "skipped" ]] && \
+             [[ "${{ needs.docker-build.result }}" == "skipped" ]]; then
+            echo "✅ All jobs skipped (docs-only change)"
+            exit 0
+          fi
+          
           # Fail only if jobs explicitly failed (not skipped)
-          # Skipped is OK - happens when paths-ignore triggers on doc-only changes
           if [[ "${{ needs.lint.result }}" == "failure" ]] || \
              [[ "${{ needs.security.result }}" == "failure" ]] || \
              [[ "${{ needs.typecheck.result }}" == "failure" ]] || \
              [[ "${{ needs.test.result }}" == "failure" ]] || \
              [[ "${{ needs.docker-build.result }}" == "failure" ]]; then
-            echo "Required checks failed"
+            echo "❌ Required checks failed"
             exit 1
           fi
           
-          # Warn if everything was skipped (doc-only change)
-          if [[ "${{ needs.lint.result }}" == "skipped" ]] && \
-             [[ "${{ needs.test.result }}" == "skipped" ]]; then
-            echo "All jobs skipped (docs-only change)"
-          else
-            echo "All required checks passed"
-          fi
+          echo "✅ All required checks passed"
 
   # ===========================================================================
   # JOB 7: DEPLOYMENT (PLACEHOLDER)
