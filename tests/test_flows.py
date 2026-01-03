@@ -30,9 +30,12 @@ if TYPE_CHECKING:
 @pytest.fixture
 def mock_db() -> AsyncMock:
     """Create a mock async database session."""
-    db = AsyncMock(spec=["get", "execute", "add", "commit", "rollback", "refresh", "scalar"])
+    db = AsyncMock(
+        spec=["get", "execute", "add", "commit", "rollback", "refresh", "scalar", "delete"]
+    )
     db.commit = AsyncMock()
     db.rollback = AsyncMock()
+    db.refresh = AsyncMock()
     return db
 
 
@@ -144,12 +147,13 @@ def mock_service() -> MagicMock:
 @pytest.mark.asyncio
 async def test_fulfill_purchase_new_service(mock_db, mock_purchase, mock_panel, mock_service):
     """Test complete flow for new service purchase fulfillment."""
+    from database.models.purchase import PurchaseType
     from services.fulfillment import fulfill_purchase
 
-    mock_purchase.purchase_type.value = "new"
+    mock_purchase.purchase_type = PurchaseType.NEW
     mock_purchase.service_id = None
 
-    with patch("services.fulfillment.provision_purchase") as mock_provision:
+    with patch("services.fulfillment.provision_purchase", new_callable=AsyncMock) as mock_provision:
         mock_provision.return_value = mock_service
 
         result = await fulfill_purchase(mock_db, purchase=mock_purchase)
@@ -171,9 +175,9 @@ async def test_fulfill_purchase_wallet_topup(mock_db, mock_purchase, mock_user):
     # Mock no existing transaction
     mock_result = MagicMock()
     mock_result.scalars.return_value.first.return_value = None
-    mock_db.execute.return_value = mock_result
+    mock_db.execute = AsyncMock(return_value=mock_result)
 
-    with patch("services.fulfillment.apply_wallet_tx") as mock_apply_wallet:
+    with patch("services.fulfillment.apply_wallet_tx", new_callable=AsyncMock) as mock_apply_wallet:
         mock_apply_wallet.return_value = None
 
         result = await fulfill_purchase(mock_db, purchase=mock_purchase)
@@ -198,9 +202,9 @@ async def test_fulfill_purchase_idempotent_wallet_topup(mock_db, mock_purchase, 
     existing_tx = MagicMock()
     mock_result = MagicMock()
     mock_result.scalars.return_value.first.return_value = existing_tx
-    mock_db.execute.return_value = mock_result
+    mock_db.execute = AsyncMock(return_value=mock_result)
 
-    with patch("services.fulfillment.apply_wallet_tx") as mock_apply_wallet:
+    with patch("services.fulfillment.apply_wallet_tx", new_callable=AsyncMock) as mock_apply_wallet:
         result = await fulfill_purchase(mock_db, purchase=mock_purchase)
 
         assert result is None

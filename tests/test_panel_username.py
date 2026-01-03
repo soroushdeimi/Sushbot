@@ -9,7 +9,7 @@ def test_make_panel_username_basic() -> None:
 
 def test_make_panel_username_no_username() -> None:
     u = make_panel_username(telegram_username=None, user_id=1, suffix="trial")
-    assert u.startswith("user-1-trial")
+    assert u.startswith("user_1_trial")
 
 
 def test_make_panel_username_truncation() -> None:

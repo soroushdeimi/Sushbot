@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 from loguru import logger
 from sqlalchemy import select
@@ -89,7 +89,7 @@ async def fulfill_purchase(db: AsyncSession, *, purchase: Purchase) -> Service |
         panel_service = await PanelFactory.create_panel(panel)
 
         if purchase.purchase_type == PurchaseType.RENEWAL:
-            now = datetime.utcnow()
+            now = datetime.now(UTC)
             base = svc.expiry_date if svc.expiry_date and svc.expiry_date > now else now
             new_exp = base + timedelta(days=int(purchase.duration_days))
             try:
