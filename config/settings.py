@@ -78,10 +78,6 @@ class Settings(BaseSettings):
         default_factory=lambda: secrets.token_urlsafe(32),
         description="Secret key for encryption",
     )
-    panel_ssl_verify: bool = Field(
-        default=True,
-        description="Verify SSL certificates when connecting to admin panels. Set to False for self-signed certs.",
-    )
     jwt_secret: str = Field(
         default_factory=lambda: secrets.token_urlsafe(32),
         description="JWT secret key",
@@ -160,13 +156,20 @@ class Settings(BaseSettings):
     # Web Panel
     web_panel_enabled: bool = Field(default=True, description="Enable web panel")
     web_panel_port: int = Field(default=8080, description="Web panel port")
-    web_panel_host: str = Field(
-        default="127.0.0.1",
-        description="Web panel host. Use 0.0.0.0 for Docker/container deployments.",
-    )
+    web_panel_host: str = Field(default="0.0.0.0", description="Web panel host")
     web_panel_secret_key: str = Field(
         default_factory=lambda: secrets.token_urlsafe(32),
         description="Web panel secret key",
+    )
+
+    # Security: CORS and Request Limits
+    cors_origins: list[str] = Field(
+        default_factory=list,
+        description="Allowed CORS origins (e.g., ['https://admin.example.com']). Empty = same-origin only.",
+    )
+    max_request_body_bytes: int = Field(
+        default=10 * 1024 * 1024,  # 10MB
+        description="Maximum request body size in bytes (DoS protection)",
     )
 
     # Logging

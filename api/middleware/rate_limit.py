@@ -1,4 +1,21 @@
-"""Rate limiting middleware for FastAPI."""
+"""Rate limiting middleware for FastAPI.
+
+IMPORTANT: This is an IN-MEMORY rate limiter.
+
+For production with multiple workers (uvicorn -w N), rate limits are NOT shared
+between processes. An attacker can bypass limits by hitting different workers.
+
+TODO: For multi-worker deployments, replace with Redis-backed rate limiting:
+    - Option 1: slowapi with Redis backend (pip install slowapi redis)
+    - Option 2: fastapi-limiter with Redis (pip install fastapi-limiter)
+
+Example with slowapi:
+    from slowapi import Limiter
+    from slowapi.util import get_remote_address
+    limiter = Limiter(key_func=get_remote_address, storage_uri="redis://localhost:6379")
+
+For single-worker deployments, this in-memory implementation is sufficient.
+"""
 
 from __future__ import annotations
 
@@ -15,7 +32,10 @@ from config.settings import settings
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
-    """Token bucket rate limiter per IP address."""
+    """Token bucket rate limiter per IP address.
+
+    WARNING: In-memory only. See module docstring for production considerations.
+    """
 
     def __init__(
         self,

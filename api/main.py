@@ -55,14 +55,42 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS middleware
+# CORS middleware - SECURITY: Never use allow_origins=["*"] with credentials!
+# Configure CORS_ORIGINS in .env for your admin dashboard domain(s)
+_cors_origins = settings.cors_origins if settings.cors_origins else []
+if not _cors_origins:
+    # Default: restrictive same-origin policy when no origins configured
+    logger.warning(
+        "CORS_ORIGINS not configured - API will reject cross-origin requests. "
+        "Set CORS_ORIGINS=['https://your-admin-panel.com'] in .env for production."
+    )
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure appropriately for production
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=_cors_origins,  # Explicitly configured origins only
+    allow_credentials=True if _cors_origins else False,  # Only with explicit origins
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH"],  # Explicit methods
+    allow_headers=["Authorization", "Content-Type", "X-Requested-With"],  # Explicit headers
 )
+
+
+# Request body size limiter - DoS protection
+@app.middleware("http")
+async def limit_request_body_size(request, call_next):
+    """Reject oversized request bodies to prevent memory exhaustion attacks."""
+    content_length = request.headers.get("content-length")
+    if content_length:
+        try:
+            if int(content_length) > settings.max_request_body_bytes:
+                from starlette.responses import JSONResponse
+
+                return JSONResponse(
+                    status_code=413,
+                    content={"detail": f"Request body too large. Max: {settings.max_request_body_bytes // (1024*1024)}MB"},
+                )
+        except ValueError:
+            pass  # Invalid content-length header, let it proceed
+    return await call_next(request)
+
 
 # Include routers
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])

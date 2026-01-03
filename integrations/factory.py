@@ -189,9 +189,12 @@ async def _create_marzban_panel(panel: Panel) -> VPNPanelInterface:
         try:
             api_key = decrypt_panel_credentials(api_key_raw)
         except Exception as e:
-            # If decryption fails, assume it's plaintext (backward compatibility)
-            # This is intentional to support both encrypted and plaintext credentials
-            logger.debug(f"Decryption failed for api_key (assuming plaintext): {type(e).__name__}")
+            # SECURITY: Plaintext credentials detected - backward compat but warn operator
+            # In production, all credentials should be encrypted with ENCRYPTION_KEY
+            logger.warning(
+                f"Panel '{panel.name}' api_key stored as PLAINTEXT (decryption failed: {type(e).__name__}). "
+                "Consider encrypting credentials with: python -c 'from utils.encryption import encrypt_panel_credentials; print(encrypt_panel_credentials(\"your_key\"))'"
+            )
             api_key = api_key_raw
 
     # Decrypt password if set
@@ -199,9 +202,11 @@ async def _create_marzban_panel(panel: Panel) -> VPNPanelInterface:
         try:
             password = decrypt_panel_credentials(password)
         except Exception as e:
-            # If decryption fails, assume it's plaintext (backward compatibility)
-            # This is intentional to support both encrypted and plaintext credentials
-            logger.debug(f"Decryption failed for password (assuming plaintext): {type(e).__name__}")
+            # SECURITY: Plaintext password detected - warn operator to encrypt
+            logger.warning(
+                f"Panel '{panel.name}' password stored as PLAINTEXT (decryption failed: {type(e).__name__}). "
+                "Consider encrypting credentials for security."
+            )
             # Keep original password value
 
     # For Marzban, api_key might contain username:password or be a token
