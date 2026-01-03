@@ -2,56 +2,66 @@
 
 ## Reporting Vulnerabilities
 
-**DO NOT** open public issues for security bugs. Email: [your-email@example.com]
+Do not open public issues for security bugs.
 
-Include: description, repro steps, impact, suggested fix (if any). We'll respond within 48h.
+Email: security@example.com
+
+Include: description, reproduction steps, impact assessment, suggested fix (if any).
+
+Response time: 48 hours.
 
 ---
 
-## Key Security Points
+## Secrets Management
 
-### Secrets
-
-- Never commit `.env` — it's gitignored
-- Rotate secrets regularly
-- Generate encryption key: `python -c "from utils.encryption import EncryptionManager; print(EncryptionManager.generate_key())"`
-
-⚠️ **Gotcha**: If you lose the encryption key, panel credentials stored in DB are unrecoverable.
-
-### Database
-
-- Use strong PostgreSQL passwords
-- Enable SSL for DB connections in prod
-- Restrict DB access to app server only
-
-### Panel Credentials
-
-All panel API keys/passwords are encrypted at rest (Fernet). Decrypted only in-memory when needed.
-
-### Payments
-
-- Validate all IPN callbacks
-- Verify signatures (NowPayments)
-- Use HTTPS for webhook URLs
-- Idempotency keys prevent double-processing
-
-### Deployment
+- `.env` is gitignored. Never commit it.
+- Rotate secrets on a schedule.
+- Generate encryption key:
 
 ```bash
-# Docker: runs as non-root by default
-docker compose up -d
-
-# Firewall: only expose ports 443 (nginx), not 8080 directly
-# Use nginx/caddy as reverse proxy with TLS
+python -c "from utils.encryption import EncryptionManager; print(EncryptionManager.generate_key())"
 ```
+
+> If you lose the encryption key, panel credentials stored in the database are unrecoverable. Back it up.
+
+## Database
+
+- Use strong PostgreSQL passwords (32+ chars, random)
+- Enable SSL for database connections in production
+- Restrict database access to application server IP only
+
+## Panel Credentials
+
+All panel API keys and passwords are encrypted at rest using Fernet symmetric encryption. Decryption occurs only in-memory when needed.
+
+## Payment Security
+
+- Validate all IPN/webhook callbacks
+- Verify cryptographic signatures (NowPayments HMAC)
+- Use HTTPS for all webhook URLs
+- Idempotency keys prevent double-processing
+
+## Deployment
+
+```bash
+# Docker runs as non-root by default
+docker compose up -d
+```
+
+Firewall rules:
+- Expose only port 443 (nginx/caddy)
+- Do not expose 8080 directly
+- Use reverse proxy with TLS termination
 
 ## Pre-Deploy Checklist
 
-- [ ] `.env` configured with real secrets
-- [ ] Encryption key generated and backed up
-- [ ] Strong DB password set
-- [ ] `PUBLIC_BASE_URL` uses HTTPS
-- [ ] Payment gateway secrets configured
-- [ ] Firewall configured (only 443 exposed)
-- [ ] Bot token is fresh (regenerate if leaked)
+```
+[ ] .env configured with production secrets
+[ ] Encryption key generated and backed up offline
+[ ] Strong database password set
+[ ] PUBLIC_BASE_URL uses HTTPS
+[ ] Payment gateway credentials configured
+[ ] Firewall: only 443 exposed
+[ ] Bot token is fresh (regenerate if previously leaked)
+```
 

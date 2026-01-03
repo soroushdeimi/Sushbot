@@ -13,6 +13,32 @@ from integrations.pasarguard.db_client import PasarGuardDBClient
 from utils.retry import retry_with_backoff
 
 
+# Protocol name mappings for PasarGuard compatibility
+# PasarGuard DB expects lowercase protocol names
+PASARGUARD_PROTOCOL_NAMES: dict[str, str] = {
+    "vless": "vless",
+    "vmess": "vmess",
+    "trojan": "trojan",
+    "shadowsocks": "shadowsocks",
+    "ss": "shadowsocks",  # Alias
+}
+
+
+def normalize_protocol_for_pasarguard(protocol: str) -> str:
+    """Normalize protocol name for PasarGuard.
+    
+    PasarGuard expects lowercase protocol names.
+    
+    Args:
+        protocol: Raw protocol string
+        
+    Returns:
+        Normalized protocol name for PasarGuard
+    """
+    proto_lower = protocol.lower().strip()
+    return PASARGUARD_PROTOCOL_NAMES.get(proto_lower, proto_lower)
+
+
 class PasarGuardService(VPNPanelInterface):
     """PasarGuard panel service implementation."""
 
@@ -55,14 +81,45 @@ class PasarGuardService(VPNPanelInterface):
         protocol: str = "vless",
         flow: str = "xtls-rprx-vision",
     ) -> UserInfo:
-        """Create a new user on PasarGuard panel."""
+        """Create a new user on PasarGuard panel.
+        
+        Args:
+            username: Username for the user
+            expire_ts: Expiration timestamp (Unix)
+            data_limit_bytes: Data limit in bytes
+            protocol: Protocol type (vless, vmess, trojan, shadowsocks)
+            flow: Flow type for VLESS (default: xtls-rprx-vision)
+            
+        Returns:
+            UserInfo with created user details
+            
+        Note:
+            PasarGuard creates users with a specific protocol based on the
+            inbound configuration. The protocol parameter is used to determine
+            which inbound to use if multiple are available.
+        """
         try:
+            # CRITICAL: Normalize protocol to lowercase for consistency
+            normalized_protocol = normalize_protocol_for_pasarguard(protocol)
+            
+            # Log protocol selection for debugging
+            logger.debug(
+                f"Creating PasarGuard user: username={username}, "
+                f"protocol={normalized_protocol}, flow={flow}"
+            )
+            
+            # Determine flow based on protocol
+            effective_flow = flow
+            if normalized_protocol not in {"vless", "trojan"}:
+                # VMess and Shadowsocks don't use flow
+                effective_flow = ""
+            
             pg_user = await self.client.get_or_create_pasarguard_user(
                 inbound_tag=self.inbound_tag,
                 username=username,
                 expire_ts=expire_ts,
                 data_limit_bytes=data_limit_bytes,
-                flow=flow,
+                flow=effective_flow,
             )
 
             # Get user stats to populate all fields

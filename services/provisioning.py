@@ -12,9 +12,35 @@ from database.models import Panel, Product, Purchase, PurchaseStatus, Service, S
 from database.models.service import ServiceType
 from integrations.exceptions import PanelConnectionError, PanelError, PanelUserNotFoundError
 from integrations.factory import PanelFactory
-from services.panel_utils import check_panel_capacity
+from services.panel_utils import (
+    VPNProtocol,
+    check_panel_capacity,
+    get_protocol_params,
+    validate_protocol_compatibility,
+)
 from services.subscription import ensure_service_sub_token
 from utils.panel_username import make_panel_username
+
+
+def normalize_protocol(protocol: str) -> str:
+    """Normalize protocol string to lowercase and handle aliases.
+    
+    Panel APIs expect lowercase protocol names. This function ensures
+    consistent protocol naming regardless of user input.
+    
+    Args:
+        protocol: Raw protocol string (may be mixed case)
+        
+    Returns:
+        Normalized lowercase protocol name
+        
+    Examples:
+        >>> normalize_protocol("VLESS")
+        'vless'
+        >>> normalize_protocol("SS")
+        'shadowsocks'
+    """
+    return VPNProtocol.normalize(protocol)
 
 
 async def provision_purchase(db: AsyncSession, *, purchase: Purchase) -> Service:
@@ -79,6 +105,32 @@ async def provision_purchase(db: AsyncSession, *, purchase: Purchase) -> Service
     if not has_capacity:
         raise ValueError(error_msg or f"Panel {panel.name} is at capacity")
 
+    # Use the protocol from purchase (user's selection) not product (template)
+    # This allows users to choose their preferred protocol for multi-protocol products
+    raw_protocol = purchase.protocol or product.get_default_protocol()
+    
+    # CRITICAL: Normalize protocol to lowercase for panel API compatibility
+    # Panel APIs (Marzban, X-UI, etc.) expect lowercase protocol names
+    selected_protocol = normalize_protocol(raw_protocol)
+    
+    # Validate protocol is supported by this panel type before making API call
+    panel_type = getattr(panel, "type", None) or "pasarguard"  # Default for legacy panels
+    is_valid, validation_error = validate_protocol_compatibility(
+        panel_type=panel_type,
+        protocol=selected_protocol,
+        strict=False,  # Don't fail for unknown panel types
+    )
+    if not is_valid:
+        logger.warning(
+            f"Protocol compatibility warning for purchase {purchase.id}: {validation_error}"
+        )
+        # Don't fail here - the panel might support it even if we don't know about it
+        # Just log the warning for monitoring
+    
+    # Get protocol-specific parameters for proper config generation
+    protocol_params = get_protocol_params(selected_protocol)
+    default_flow = protocol_params.get("default_flow") if protocol_params else "xtls-rprx-vision"
+
     panel_service = None
     try:
         panel_service = await PanelFactory.create_panel(panel)
@@ -99,7 +151,8 @@ async def provision_purchase(db: AsyncSession, *, purchase: Purchase) -> Service
                 username=username,
                 expire_ts=expire_ts,
                 data_limit_bytes=data_limit_bytes,
-                protocol=product.protocol,
+                protocol=selected_protocol,
+                flow=default_flow or "xtls-rprx-vision",  # Pass flow for VLESS/Trojan
             )
         except PanelConnectionError as e:
             logger.error(
@@ -118,7 +171,7 @@ async def provision_purchase(db: AsyncSession, *, purchase: Purchase) -> Service
         try:
             config_link = await panel_service.generate_config_link(
                 username=username,
-                protocol=product.protocol,
+                protocol=selected_protocol,
             )
         except (PanelError, PanelUserNotFoundError) as e:
             logger.error(
@@ -137,7 +190,7 @@ async def provision_purchase(db: AsyncSession, *, purchase: Purchase) -> Service
             "client_email": username,
             "client_uuid": None,  # Extracted from proxy_settings if needed
             "config_link": config_link,
-            "protocol": product.protocol,
+            "protocol": selected_protocol,  # Use user's selected protocol
             "server_address": server_address,
             "port": port,
             "panel_id": product.panel_id,
@@ -166,7 +219,7 @@ async def provision_purchase(db: AsyncSession, *, purchase: Purchase) -> Service
         panel_id=product.panel_id,
         inbound_id=cfg.get("inbound_id"),
         client_email=username,
-        protocol=product.protocol,
+        protocol=selected_protocol,  # Use user's selected protocol from purchase
         server_address=cfg.get("server_address") or "unknown",
         port=int(cfg.get("port") or settings.pasarguard_default_port),
         total_traffic_gb=product.traffic_gb,

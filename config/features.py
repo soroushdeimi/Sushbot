@@ -50,6 +50,14 @@ REGISTRY: dict[str, Feature] = {
     "content_cms": Feature(
         "FEATURE_CONTENT_CMS", True, description="Enable FAQ/Tutorial/text customization from DB"
     ),
+    # Protocol Selection (new feature)
+    "protocol_selection": Feature(
+        "FEATURE_PROTOCOL_SELECTION",
+        True,
+        deps=("purchase",),
+        description="Allow users to select VPN protocol (VLESS/VMESS/Trojan) before purchase. "
+        "When disabled, uses the product's default protocol.",
+    ),
     # Restrictions / verification
     "phone_verification": Feature(
         "FEATURE_PHONE_VERIFICATION",
@@ -123,6 +131,23 @@ REGISTRY: dict[str, Feature] = {
     "service_location_change": Feature(
         "FEATURE_SERVICE_LOCATION_CHANGE", False, description="Enable location/inbound change"
     ),
+    # Notifications
+    "expiry_reminders": Feature(
+        "FEATURE_EXPIRY_REMINDERS", True, description="Send automatic reminders before service expiry"
+    ),
+    "low_traffic_alerts": Feature(
+        "FEATURE_LOW_TRAFFIC_ALERTS", True, description="Alert users when traffic is running low"
+    ),
+    "admin_notifications": Feature(
+        "FEATURE_ADMIN_NOTIFICATIONS", True, description="Send admin notifications for purchases/issues"
+    ),
+    # Multi-panel support
+    "multi_panel": Feature(
+        "FEATURE_MULTI_PANEL", True, description="Support multiple VPN panels (Marzban, PasarGuard)"
+    ),
+    "usage_sync": Feature(
+        "FEATURE_USAGE_SYNC", True, description="Sync usage data from panels periodically"
+    ),
 }
 
 
@@ -158,3 +183,47 @@ def enabled_payment_gateways(*, env: os._Environ[str] = os.environ) -> set[str]:
     if is_enabled("pay_aqayepardakht", env=env):
         out.add("aqayepardakht")
     return out
+
+
+def get_all_features(*, env: os._Environ[str] = os.environ) -> dict[str, dict]:
+    """Get all features with their status and description.
+    
+    Returns:
+        Dict mapping feature key to {enabled, env_key, description, default}
+    """
+    result = {}
+    for key, feat in REGISTRY.items():
+        result[key] = {
+            "enabled": is_enabled(key, env=env),
+            "env_key": feat.env_key,
+            "description": feat.description,
+            "default": feat.default,
+            "dependencies": feat.deps,
+        }
+    return result
+
+
+def get_enabled_features(*, env: os._Environ[str] = os.environ) -> list[str]:
+    """Get list of all enabled feature keys."""
+    return [key for key in REGISTRY if is_enabled(key, env=env)]
+
+
+def get_disabled_features(*, env: os._Environ[str] = os.environ) -> list[str]:
+    """Get list of all disabled feature keys."""
+    return [key for key in REGISTRY if not is_enabled(key, env=env)]
+
+
+def print_feature_status(*, env: os._Environ[str] = os.environ) -> str:
+    """Generate a human-readable feature status report."""
+    lines = ["📋 Feature Flags Status:", "=" * 40]
+    
+    for key, feat in sorted(REGISTRY.items()):
+        status = "✅" if is_enabled(key, env=env) else "❌"
+        lines.append(f"{status} {key}: {feat.description}")
+    
+    lines.append("=" * 40)
+    enabled_count = len(get_enabled_features(env=env))
+    total_count = len(REGISTRY)
+    lines.append(f"Enabled: {enabled_count}/{total_count}")
+    
+    return "\n".join(lines)

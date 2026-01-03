@@ -107,6 +107,9 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "trial_active_exists": "شما یک تست فعال دارید. لطفاً بعد از اتمام، دوباره درخواست دهید.",
         "trial_already_used": "شما قبلاً از تست استفاده کرده‌اید. لطفاً سرویس خریداری کنید.",
         "trial_created": "✅ تست ساخته شد.\n\nمدت: {days} روز\nحجم: {gb}GB\nService ID: {service_id}",
+        "select_protocol": "🔌 لطفاً پروتکل مورد نظر خود را انتخاب کنید:",
+        "select_protocol_desc": "این محصول چندین پروتکل را پشتیبانی می‌کند. پروتکل ترجیحی خود را انتخاب کنید:",
+        "protocol_selected": "✅ پروتکل {protocol} انتخاب شد.",
     },
     "en": {
         "welcome": "🎉 Welcome to VPN Seller Bot!\n\n"
@@ -196,6 +199,9 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "trial_active_exists": "You already have an active trial. Please wait until it expires.",
         "trial_already_used": "You have already used your trial. Please purchase a service.",
         "trial_created": "✅ Trial created.\n\nDuration: {days} days\nTraffic: {gb}GB\nService ID: {service_id}",
+        "select_protocol": "🔌 Please select your preferred protocol:",
+        "select_protocol_desc": "This product supports multiple protocols. Choose your preferred one:",
+        "protocol_selected": "✅ Protocol {protocol} selected.",
     },
 }
 
