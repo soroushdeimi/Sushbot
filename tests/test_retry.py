@@ -112,9 +112,7 @@ class TestRetryWithBackoff:
         """Custom retryable exceptions should be respected."""
         call_count = 0
 
-        @retry_with_backoff(
-            max_retries=2, initial_delay=0.01, retryable_exceptions=(ValueError,)
-        )
+        @retry_with_backoff(max_retries=2, initial_delay=0.01, retryable_exceptions=(ValueError,))
         async def custom_retry_func():
             nonlocal call_count
             call_count += 1
@@ -179,7 +177,10 @@ class TestRetryWithBackoff:
         """Jitter should add variation to delays."""
 
         @retry_with_backoff(
-            max_retries=10, initial_delay=0.5, jitter=True, exponential_base=1.0  # No growth
+            max_retries=10,
+            initial_delay=0.5,
+            jitter=True,
+            exponential_base=1.0,  # No growth
         )
         async def jittered_func():
             raise ConnectionError("Fail")

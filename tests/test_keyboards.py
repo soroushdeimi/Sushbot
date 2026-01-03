@@ -62,11 +62,7 @@ class TestMainMenuKeyboard:
 
         with patch("bot.keyboards.is_enabled", side_effect=feature_check):
             kb = main_menu_keyboard()
-            found = any(
-                btn.callback_data == "trial"
-                for row in kb.inline_keyboard
-                for btn in row
-            )
+            found = any(btn.callback_data == "trial" for row in kb.inline_keyboard for btn in row)
             assert found
 
     def test_support_button_when_enabled(self):
@@ -75,11 +71,7 @@ class TestMainMenuKeyboard:
 
         with patch("bot.keyboards.is_enabled", side_effect=feature_check):
             kb = main_menu_keyboard()
-            found = any(
-                btn.callback_data == "support"
-                for row in kb.inline_keyboard
-                for btn in row
-            )
+            found = any(btn.callback_data == "support" for row in kb.inline_keyboard for btn in row)
             assert found
 
 
@@ -124,37 +116,25 @@ class TestWalletMenuKeyboard:
     def test_has_balance_button(self):
         kb = wallet_menu_keyboard()
         found = any(
-            btn.callback_data == "wallet_balance"
-            for row in kb.inline_keyboard
-            for btn in row
+            btn.callback_data == "wallet_balance" for row in kb.inline_keyboard for btn in row
         )
         assert found
 
     def test_has_topup_button(self):
         kb = wallet_menu_keyboard()
         found = any(
-            btn.callback_data == "wallet_topup"
-            for row in kb.inline_keyboard
-            for btn in row
+            btn.callback_data == "wallet_topup" for row in kb.inline_keyboard for btn in row
         )
         assert found
 
     def test_has_gift_code_button(self):
         kb = wallet_menu_keyboard()
-        found = any(
-            btn.callback_data == "gift_code"
-            for row in kb.inline_keyboard
-            for btn in row
-        )
+        found = any(btn.callback_data == "gift_code" for row in kb.inline_keyboard for btn in row)
         assert found
 
     def test_has_back_button(self):
         kb = wallet_menu_keyboard()
-        found = any(
-            btn.callback_data == "menu"
-            for row in kb.inline_keyboard
-            for btn in row
-        )
+        found = any(btn.callback_data == "menu" for row in kb.inline_keyboard for btn in row)
         assert found
 
     def test_with_user_language(self):
@@ -174,28 +154,18 @@ class TestSupportKeyboard:
     def test_has_create_ticket_button(self):
         kb = support_keyboard()
         found = any(
-            btn.callback_data == "create_ticket"
-            for row in kb.inline_keyboard
-            for btn in row
+            btn.callback_data == "create_ticket" for row in kb.inline_keyboard for btn in row
         )
         assert found
 
     def test_has_my_tickets_button(self):
         kb = support_keyboard()
-        found = any(
-            btn.callback_data == "my_tickets"
-            for row in kb.inline_keyboard
-            for btn in row
-        )
+        found = any(btn.callback_data == "my_tickets" for row in kb.inline_keyboard for btn in row)
         assert found
 
     def test_has_back_button(self):
         kb = support_keyboard()
-        found = any(
-            btn.callback_data == "menu"
-            for row in kb.inline_keyboard
-            for btn in row
-        )
+        found = any(btn.callback_data == "menu" for row in kb.inline_keyboard for btn in row)
         assert found
 
 
@@ -218,9 +188,7 @@ class TestProductDetailKeyboard:
     def test_has_discount_code_button(self):
         kb = product_detail_keyboard(product_id=1)
         found = any(
-            "discount" in (btn.callback_data or "")
-            for row in kb.inline_keyboard
-            for btn in row
+            "discount" in (btn.callback_data or "") for row in kb.inline_keyboard for btn in row
         )
         assert found
 

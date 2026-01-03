@@ -526,7 +526,8 @@ async def check_panel_health(db: AsyncSession, panel_id: int) -> PanelHealth:
     start_time = asyncio.get_event_loop().time()
 
     try:
-        async with httpx.AsyncClient(timeout=10.0, verify=False) as client:
+        # nosec B501 - Admin panels often use self-signed certificates
+        async with httpx.AsyncClient(timeout=10.0, verify=False) as client:  # nosec B501
             # Try to get token and check API
             if panel.panel_type == "marzban":
                 response = await client.post(

@@ -32,64 +32,46 @@ class TestAdminMainKeyboard:
 
     def test_has_stats_button(self):
         kb = admin_main_keyboard()
-        found = any(
-            btn.callback_data == "admin_stats"
-            for row in kb.inline_keyboard
-            for btn in row
-        )
+        found = any(btn.callback_data == "admin_stats" for row in kb.inline_keyboard for btn in row)
         assert found
 
     def test_has_users_button(self):
         kb = admin_main_keyboard()
-        found = any(
-            btn.callback_data == "admin_users"
-            for row in kb.inline_keyboard
-            for btn in row
-        )
+        found = any(btn.callback_data == "admin_users" for row in kb.inline_keyboard for btn in row)
         assert found
 
     def test_has_services_button(self):
         kb = admin_main_keyboard()
         found = any(
-            btn.callback_data == "admin_services"
-            for row in kb.inline_keyboard
-            for btn in row
+            btn.callback_data == "admin_services" for row in kb.inline_keyboard for btn in row
         )
         assert found
 
     def test_has_products_button(self):
         kb = admin_main_keyboard()
         found = any(
-            btn.callback_data == "admin_products"
-            for row in kb.inline_keyboard
-            for btn in row
+            btn.callback_data == "admin_products" for row in kb.inline_keyboard for btn in row
         )
         assert found
 
     def test_has_panels_button(self):
         kb = admin_main_keyboard()
         found = any(
-            btn.callback_data == "admin_panels"
-            for row in kb.inline_keyboard
-            for btn in row
+            btn.callback_data == "admin_panels" for row in kb.inline_keyboard for btn in row
         )
         assert found
 
     def test_has_tickets_button(self):
         kb = admin_main_keyboard()
         found = any(
-            btn.callback_data == "admin_tickets"
-            for row in kb.inline_keyboard
-            for btn in row
+            btn.callback_data == "admin_tickets" for row in kb.inline_keyboard for btn in row
         )
         assert found
 
     def test_has_settings_button(self):
         kb = admin_main_keyboard()
         found = any(
-            btn.callback_data == "admin_settings"
-            for row in kb.inline_keyboard
-            for btn in row
+            btn.callback_data == "admin_settings" for row in kb.inline_keyboard for btn in row
         )
         assert found
 
@@ -101,11 +83,7 @@ class TestAdminPaymentsListKeyboard:
         kb = admin_payments_list_keyboard(payments=[], page=0)
         assert isinstance(kb, InlineKeyboardMarkup)
         # Should still have back button
-        found = any(
-            btn.callback_data == "admin_main"
-            for row in kb.inline_keyboard
-            for btn in row
-        )
+        found = any(btn.callback_data == "admin_main" for row in kb.inline_keyboard for btn in row)
         assert found
 
     def test_single_payment_shows_buttons(self):
@@ -166,14 +144,10 @@ class TestAdminPaymentsListKeyboard:
 
         # Should have next button but not prev
         has_next = any(
-            "page_1" in (btn.callback_data or "")
-            for row in kb.inline_keyboard
-            for btn in row
+            "page_1" in (btn.callback_data or "") for row in kb.inline_keyboard for btn in row
         )
         has_prev = any(
-            "page_-1" in (btn.callback_data or "")
-            for row in kb.inline_keyboard
-            for btn in row
+            "page_-1" in (btn.callback_data or "") for row in kb.inline_keyboard for btn in row
         )
         assert has_next
         assert not has_prev
@@ -192,14 +166,10 @@ class TestAdminPaymentsListKeyboard:
 
         # Should have both next and prev
         has_next = any(
-            "page_2" in (btn.callback_data or "")
-            for row in kb.inline_keyboard
-            for btn in row
+            "page_2" in (btn.callback_data or "") for row in kb.inline_keyboard for btn in row
         )
         has_prev = any(
-            "page_0" in (btn.callback_data or "")
-            for row in kb.inline_keyboard
-            for btn in row
+            "page_0" in (btn.callback_data or "") for row in kb.inline_keyboard for btn in row
         )
         assert has_next
         assert has_prev
@@ -218,9 +188,7 @@ class TestAdminPaymentsListKeyboard:
 
         # Last page should not have next
         has_next = any(
-            "page_2" in (btn.callback_data or "")
-            for row in kb.inline_keyboard
-            for btn in row
+            "page_2" in (btn.callback_data or "") for row in kb.inline_keyboard for btn in row
         )
         assert not has_next
 
