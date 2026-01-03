@@ -13,8 +13,8 @@ permissions:
 
 env:
   PYTHON_VERSION: "3.12"
-  POSTGRES_USER: test
-  POSTGRES_PASSWORD: test
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: postgres
   POSTGRES_DB: test_sushbotseller
 
 jobs:

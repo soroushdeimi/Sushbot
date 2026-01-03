@@ -79,3 +79,12 @@ debug.log
 Thumbs.db
 desktop.ini
 
+# Local scripts (don't commit)
+verify_and_push.ps1
+verify_and_push.sh
+
+# Security scan outputs
+*.sarif
+bandit.sarif
+bandit-report.json
+
