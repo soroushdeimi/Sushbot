@@ -298,3 +298,40 @@ async def admin_panel_stats_callback(
                 await panel_service.close()
 
         await query.edit_message_text(text, reply_markup=admin_panel_detail_keyboard(panel_id))
+
+
+async def admin_panel_edit_callback(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, panel_id: int
+) -> None:
+    """Start panel editing process."""
+    query = update.callback_query
+    if not query:
+        return
+    user = update.effective_user
+    if not user:
+        return
+
+    async for db in get_db():
+        from handlers.commands import _require_admin
+        from services.state_machine import set_step
+
+        admin = await _require_admin(db, user.id)
+        if not admin:
+            await query.answer("Admin only.", show_alert=True)
+            return
+
+        panel = await db.get(Panel, panel_id)
+        if not panel:
+            await query.edit_message_text("❌ پنل پیدا نشد.")
+            return
+
+        text = (
+            f"✏️ ویرایش پنل: {panel.name}\n\n"
+            f"📌 نام فعلی: {panel.name}\n"
+            f"🌐 آدرس: {panel.url}\n"
+            f"📡 نوع: {panel.panel_type.value if panel.panel_type else 'N/A'}\n\n"
+            "لطفاً نام جدید را ارسال کنید یا /cancel برای لغو:"
+        )
+
+        await set_step(user.id, step="admin.edit_panel_name", payload={"panel_id": panel_id})
+        await query.edit_message_text(text)

@@ -10,31 +10,31 @@ from utils.i18n import get_user_language, t
 
 
 def main_menu_keyboard(user: User | None = None) -> InlineKeyboardMarkup:
-    """Main menu inline keyboard with i18n."""
+    """Main menu inline keyboard with i18n and improved UX."""
     lang = get_user_language(user)
     keyboard: list[list[InlineKeyboardButton]] = []
 
     if is_enabled("purchase"):
         keyboard.append(
-            [InlineKeyboardButton(t("purchase_service", user, lang), callback_data="purchase")]
+            [InlineKeyboardButton("🛒 " + t("purchase_service", user, lang), callback_data="purchase")]
         )
     if is_enabled("services"):
         keyboard.append(
-            [InlineKeyboardButton(t("my_services", user, lang), callback_data="my_services")]
+            [InlineKeyboardButton("📦 " + t("my_services", user, lang), callback_data="my_services")]
         )
 
     row: list[InlineKeyboardButton] = []
     if is_enabled("wallet"):
-        row.append(InlineKeyboardButton(t("wallet", user, lang), callback_data="wallet"))
+        row.append(InlineKeyboardButton("💳 " + t("wallet", user, lang), callback_data="wallet"))
     if is_enabled("affiliate"):
-        row.append(InlineKeyboardButton(t("affiliate", user, lang), callback_data="affiliate"))
+        row.append(InlineKeyboardButton("🤝 " + t("affiliate", user, lang), callback_data="affiliate"))
     if row:
         keyboard.append(row)
 
     if is_enabled("trial"):
-        keyboard.append([InlineKeyboardButton(t("free_trial", user, lang), callback_data="trial")])
+        keyboard.append([InlineKeyboardButton("🎁 " + t("free_trial", user, lang), callback_data="trial")])
     if is_enabled("support"):
-        keyboard.append([InlineKeyboardButton(t("support", user, lang), callback_data="support")])
+        keyboard.append([InlineKeyboardButton("💬 " + t("support", user, lang), callback_data="support")])
     return InlineKeyboardMarkup(keyboard)
 
 
@@ -56,7 +56,7 @@ def main_reply_keyboard(user: User | None = None) -> ReplyKeyboardMarkup:
 
 
 def wallet_menu_keyboard(user: User | None = None) -> InlineKeyboardMarkup:
-    """Wallet menu keyboard."""
+    """Wallet menu keyboard with improved layout."""
     lang = get_user_language(user)
     keyboard = [
         [
@@ -64,24 +64,26 @@ def wallet_menu_keyboard(user: User | None = None) -> InlineKeyboardMarkup:
                 "💰 " + t("wallet_balance", user, lang), callback_data="wallet_balance"
             )
         ],
-        [InlineKeyboardButton("➕ " + t("topup_wallet", user, lang), callback_data="wallet_topup")],
-        [InlineKeyboardButton("🎁 " + t("gift_code", user, lang), callback_data="gift_code")],
-        [InlineKeyboardButton(t("back", user, lang), callback_data="menu")],
+        [
+            InlineKeyboardButton("➕ " + t("topup_wallet", user, lang), callback_data="wallet_topup"),
+            InlineKeyboardButton("🎁 " + t("gift_code", user, lang), callback_data="gift_code"),
+        ],
+        [InlineKeyboardButton("◀️ " + t("back", user, lang), callback_data="menu")],
     ]
     return InlineKeyboardMarkup(keyboard)
 
 
 def support_keyboard(user: User | None = None) -> InlineKeyboardMarkup:
-    """Create support keyboard with i18n."""
+    """Create support keyboard with i18n and improved layout."""
     lang = get_user_language(user)
     keyboard = [
         [
             InlineKeyboardButton(
-                "📝 " + t("create_ticket", user, lang), callback_data="create_ticket"
-            )
+                "✏️ " + t("create_ticket", user, lang), callback_data="create_ticket"
+            ),
+            InlineKeyboardButton("📋 " + t("my_tickets", user, lang), callback_data="my_tickets"),
         ],
-        [InlineKeyboardButton("📋 " + t("my_tickets", user, lang), callback_data="my_tickets")],
-        [InlineKeyboardButton(t("back", user, lang), callback_data="menu")],
+        [InlineKeyboardButton("◀️ " + t("back", user, lang), callback_data="menu")],
     ]
     return InlineKeyboardMarkup(keyboard)
 
@@ -101,7 +103,7 @@ def product_detail_keyboard(product_id: int, user: User | None = None) -> Inline
                 callback_data=f"discount_enter_{product_id}",
             )
         ],
-        [InlineKeyboardButton(t("back", user, lang), callback_data="purchase")],
+        [InlineKeyboardButton("◀️ " + t("back", user, lang), callback_data="purchase")],
     ]
     return InlineKeyboardMarkup(keyboard)
 
@@ -187,7 +189,7 @@ def payment_gateway_keyboard(purchase_id: str, user: User | None = None) -> Inli
             [
                 InlineKeyboardButton(
                     "🌐 " + t("nowpayments", user, lang),
-                    callback_data=f"payment_nowpay_{purchase_id}",
+                    callback_data=f"payment_nowpayments_{purchase_id}",
                 )
             ]
         )
@@ -196,79 +198,89 @@ def payment_gateway_keyboard(purchase_id: str, user: User | None = None) -> Inli
             [
                 InlineKeyboardButton(
                     "🏦 " + t("aqayepardakht", user, lang),
-                    callback_data=f"payment_aqaye_{purchase_id}",
+                    callback_data=f"payment_aqayepardakht_{purchase_id}",
                 )
             ]
         )
 
     keyboard.append(
-        [InlineKeyboardButton(t("cancel", user, lang), callback_data=f"cancel_order_{purchase_id}")]
+        [InlineKeyboardButton("❌ " + t("cancel", user, lang), callback_data=f"cancel_order_{purchase_id}")]
     )
     return InlineKeyboardMarkup(keyboard)
 
 
 def products_keyboard(products: list, user: User | None = None) -> InlineKeyboardMarkup:
-    """Products list keyboard."""
+    """Products list keyboard with improved visual structure."""
     lang = get_user_language(user)
     keyboard: list[list[InlineKeyboardButton]] = []
     for product in products:
         name = product.name or f"Product {product.id}"
-        price_text = f"{int(product.price):,} Toman" if product.price > 0 else t("free", user, lang)
-        button_text = f"{name} | {product.duration_days} days | {price_text}"
+        price_text = f"{int(product.price):,}T" if product.price > 0 else t("free", user, lang)
+        days_text = f"{product.duration_days}d" if product.duration_days else "∞"
+        button_text = f"📎 {name} • {days_text} • {price_text}"
         keyboard.append([InlineKeyboardButton(button_text, callback_data=f"product_{product.id}")])
-    keyboard.append([InlineKeyboardButton(t("back", user, lang), callback_data="menu")])
+    keyboard.append([InlineKeyboardButton("◀️ " + t("back", user, lang), callback_data="menu")])
     return InlineKeyboardMarkup(keyboard)
 
 
 def services_list_keyboard(services: list, user: User | None = None) -> InlineKeyboardMarkup:
-    """Services list keyboard."""
+    """Services list keyboard with status indicators."""
     lang = get_user_language(user)
     keyboard: list[list[InlineKeyboardButton]] = []
     for svc in services:
-        name = svc.name or f"Service {svc.id}"
-        status_emoji = "✅" if svc.is_active else "❌"
-        button_text = f"{status_emoji} {name}"
-        keyboard.append([InlineKeyboardButton(button_text, callback_data=f"service_{svc.id}")])
-    keyboard.append([InlineKeyboardButton(t("back", user, lang), callback_data="menu")])
+        name = svc.name or f"#{svc.id}"
+        status_emoji = "✅" if svc.is_active else "🔴"
+        protocol = getattr(svc, 'protocol', '').upper()[:4] if hasattr(svc, 'protocol') else ''
+        button_text = f"{status_emoji} {name}" + (f" • {protocol}" if protocol else "")
+        keyboard.append([InlineKeyboardButton(button_text, callback_data=f"svc_{svc.id}")])
+    keyboard.append([InlineKeyboardButton("◀️ " + t("back", user, lang), callback_data="menu")])
     return InlineKeyboardMarkup(keyboard)
 
 
 def service_manage_keyboard(service_id: int, user: User | None = None) -> InlineKeyboardMarkup:
-    """Service management keyboard."""
+    """Service management keyboard with grouped actions."""
     lang = get_user_language(user)
     keyboard = [
         [
             InlineKeyboardButton(
-                "📋 " + t("get_config", user, lang), callback_data=f"service_config_{service_id}"
-            )
+                "📋 " + t("get_config", user, lang), callback_data=f"svc_send_{service_id}"
+            ),
+            InlineKeyboardButton(
+                "🔗 " + t("get_subscription", user, lang), callback_data=f"svc_sub_{service_id}"
+            ),
         ],
         [
             InlineKeyboardButton(
-                "🔗 " + t("get_subscription", user, lang), callback_data=f"service_sub_{service_id}"
+                "🔄 " + t("rotate", user, lang), callback_data=f"svc_rotate_{service_id}"
             )
         ],
-        [
-            InlineKeyboardButton(
-                "🔄 " + t("rotate", user, lang), callback_data=f"service_rotate_{service_id}"
-            )
-        ],
-        [InlineKeyboardButton(t("back", user, lang), callback_data="my_services")],
+        [InlineKeyboardButton("◀️ " + t("back", user, lang), callback_data="my_services")],
     ]
     return InlineKeyboardMarkup(keyboard)
 
 
 def confirm_action_keyboard(
-    action: str, item_id: int, user: User | None = None
+    action: str,
+    item_id: int,
+    user: User | None = None,
+    *,
+    prefix: str | None = None,
+    confirm_token: str = "confirm",
+    cancel_token: str = "cancel",
 ) -> InlineKeyboardMarkup:
     """Confirmation keyboard for actions."""
     lang = get_user_language(user)
+
+    base = f"{prefix}_" if prefix else ""
+    confirm_cb = f"{base}{action}_{confirm_token}_{item_id}"
+    cancel_cb = f"{base}{action}_{cancel_token}_{item_id}"
     keyboard = [
         [
             InlineKeyboardButton(
-                "✅ " + t("confirm", user, lang), callback_data=f"{action}_confirm_{item_id}"
+                "✅ " + t("confirm", user, lang), callback_data=confirm_cb
             ),
             InlineKeyboardButton(
-                "❌ " + t("cancel", user, lang), callback_data=f"{action}_cancel_{item_id}"
+                "❌ " + t("cancel", user, lang), callback_data=cancel_cb
             ),
         ]
     ]
@@ -276,7 +288,10 @@ def confirm_action_keyboard(
 
 
 def service_products_keyboard(
-    service_id: int, products: list, user: User | None = None
+    action: str,
+    service_id: int,
+    products: list,
+    user: User | None = None,
 ) -> InlineKeyboardMarkup:
     """Products keyboard for service upgrade/renewal."""
     lang = get_user_language(user)
@@ -288,12 +303,13 @@ def service_products_keyboard(
         keyboard.append(
             [
                 InlineKeyboardButton(
-                    button_text, callback_data=f"service_product_{service_id}_{product.id}"
+                    button_text,
+                    callback_data=f"svc_apply_{action}_{service_id}_{product.id}",
                 )
             ]
         )
     keyboard.append(
-        [InlineKeyboardButton(t("back", user, lang), callback_data=f"service_{service_id}")]
+        [InlineKeyboardButton(t("back", user, lang), callback_data=f"svc_{service_id}")]
     )
     return InlineKeyboardMarkup(keyboard)
 

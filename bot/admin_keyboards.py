@@ -15,21 +15,27 @@ from database.models.purchase import PurchaseType
 
 
 def admin_main_keyboard() -> InlineKeyboardMarkup:
-    """Main admin menu keyboard."""
+    """Main admin menu keyboard with improved grid layout."""
     return InlineKeyboardMarkup(
         [
             [
                 InlineKeyboardButton(
                     "💰 پرداخت‌های در انتظار", callback_data="admin_payments_pending"
-                )
+                ),
+                InlineKeyboardButton("📊 آمار کلی", callback_data="admin_stats"),
             ],
-            [InlineKeyboardButton("📊 آمار کلی", callback_data="admin_stats")],
-            [InlineKeyboardButton("👥 مدیریت کاربران", callback_data="admin_users")],
-            [InlineKeyboardButton("🔧 مدیریت سرویس‌ها", callback_data="admin_services")],
-            [InlineKeyboardButton("📦 مدیریت محصولات", callback_data="admin_products")],
-            [InlineKeyboardButton("🖥️ مدیریت پنل‌ها", callback_data="admin_panels")],
-            [InlineKeyboardButton("🎫 تیکت‌های پشتیبانی", callback_data="admin_tickets")],
-            [InlineKeyboardButton("⚙️ تنظیمات", callback_data="admin_settings")],
+            [
+                InlineKeyboardButton("👥 کاربران", callback_data="admin_users"),
+                InlineKeyboardButton("🔧 سرویس‌ها", callback_data="admin_services"),
+            ],
+            [
+                InlineKeyboardButton("📦 محصولات", callback_data="admin_products"),
+                InlineKeyboardButton("🖥️ پنل‌ها", callback_data="admin_panels"),
+            ],
+            [
+                InlineKeyboardButton("🎟️ تیکت‌ها", callback_data="admin_tickets"),
+                InlineKeyboardButton("⚙️ تنظیمات", callback_data="admin_settings"),
+            ],
         ]
     )
 
@@ -140,25 +146,28 @@ def admin_users_list_keyboard(
 
 
 def admin_user_detail_keyboard(user_id: int) -> InlineKeyboardMarkup:
-    """User detail management keyboard."""
+    """User detail management keyboard with 2-column layout."""
     return InlineKeyboardMarkup(
         [
             [
                 InlineKeyboardButton(
-                    "💰 تغییر موجودی", callback_data=f"admin_user_balance_{user_id}"
-                )
+                    "💰 موجودی", callback_data=f"admin_user_balance_{user_id}"
+                ),
+                InlineKeyboardButton(
+                    "📦 سرویس‌ها", callback_data=f"admin_user_services_{user_id}"
+                ),
             ],
             [
                 InlineKeyboardButton(
-                    "📋 سرویس‌های کاربر", callback_data=f"admin_user_services_{user_id}"
-                )
+                    "📃 تاریخچه", callback_data=f"admin_user_purchases_{user_id}"
+                ),
+                InlineKeyboardButton(
+                    "🚫 بن", callback_data=f"admin_user_ban_{user_id}"
+                ),
             ],
             [
-                InlineKeyboardButton(
-                    "📊 تاریخچه خرید", callback_data=f"admin_user_purchases_{user_id}"
-                )
+                InlineKeyboardButton("◀️ بازگشت", callback_data="admin_users")
             ],
-            [InlineKeyboardButton("🔙 بازگشت", callback_data="admin_users")],
         ]
     )
 

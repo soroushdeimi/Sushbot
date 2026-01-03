@@ -620,6 +620,40 @@ async def search_users_command(update: Update, context: ContextTypes.DEFAULT_TYP
 
 
 # =============================================================================
+# BROADCAST CALLBACK HANDLERS
+# =============================================================================
+
+
+async def broadcast_confirm_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle broadcast confirmation from inline button."""
+    query = update.callback_query
+    if not query:
+        return
+
+    # Get the stored message from context
+    message_text = context.user_data.get("broadcast_message")
+    if not message_text:
+        await query.answer("پیام منقضی شده. لطفاً دوباره امتحان کنید.", show_alert=True)
+        return
+
+    await execute_broadcast(update, context, message_text)
+
+
+async def broadcast_cancel_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle broadcast cancellation."""
+    query = update.callback_query
+    if not query:
+        return
+
+    await query.answer("ارسال لغو شد.", show_alert=True)
+    await query.edit_message_text("❌ ارسال پیام لغو شد.")
+
+    # Clear stored message
+    if "broadcast_message" in context.user_data:
+        del context.user_data["broadcast_message"]
+
+
+# =============================================================================
 # HANDLER REGISTRATION
 # =============================================================================
 

@@ -100,3 +100,98 @@ async def admin_stats_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         )
 
         await query.edit_message_text(text, reply_markup=admin_main_keyboard())
+
+
+async def admin_stats_detailed_callback(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+) -> None:
+    """Show detailed statistics with breakdowns."""
+    query = update.callback_query
+    if not query:
+        return
+    user = update.effective_user
+    if not user:
+        return
+
+    async for db in get_db():
+        from handlers.commands import _require_admin
+
+        admin = await _require_admin(db, user.id)
+        if not admin:
+            await query.answer("Admin only.", show_alert=True)
+            return
+
+        # Get service stats by status
+        active_count = (
+            await db.scalar(
+                select(func.count(Service.id)).where(Service.status == ServiceStatus.ACTIVE)
+            )
+            or 0
+        )
+        expired_count = (
+            await db.scalar(
+                select(func.count(Service.id)).where(Service.status == ServiceStatus.EXPIRED)
+            )
+            or 0
+        )
+        disabled_count = (
+            await db.scalar(
+                select(func.count(Service.id)).where(Service.status == ServiceStatus.DISABLED)
+            )
+            or 0
+        )
+
+        # User growth stats
+        from datetime import timedelta
+
+        week_ago = datetime.utcnow() - timedelta(days=7)
+        new_users_week = (
+            await db.scalar(select(func.count(User.id)).where(User.created_at >= week_ago)) or 0
+        )
+
+        text = (
+            "📈 آمار تفصیلی\n\n"
+            "🔧 سرویس‌ها:\n"
+            f"  ✅ فعال: {active_count:,}\n"
+            f"  ⏰ منقضی: {expired_count:,}\n"
+            f"  🚫 غیرفعال: {disabled_count:,}\n\n"
+            f"👥 کاربران جدید (7 روز): {new_users_week:,}"
+        )
+
+        await query.edit_message_text(text, reply_markup=admin_main_keyboard())
+
+
+async def admin_health_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Check and show system health status."""
+    query = update.callback_query
+    if not query:
+        return
+    user = update.effective_user
+    if not user:
+        return
+
+    async for db in get_db():
+        from handlers.commands import _require_admin
+
+        admin = await _require_admin(db, user.id)
+        if not admin:
+            await query.answer("Admin only.", show_alert=True)
+            return
+
+        from database.models import Panel, PanelStatus
+
+        # Check panel status
+        panels = await db.execute(select(Panel))
+        panels_list = list(panels.scalars().all())
+
+        healthy_panels = sum(1 for p in panels_list if p.status == PanelStatus.ACTIVE)
+        total_panels = len(panels_list)
+
+        text = (
+            "🏥 وضعیت سلامت سیستم\n\n"
+            f"🖥️ پنل‌ها: {healthy_panels}/{total_panels} فعال\n"
+            "✅ دیتابیس: متصل\n"
+            "✅ ربات: فعال"
+        )
+
+        await query.edit_message_text(text, reply_markup=admin_main_keyboard())

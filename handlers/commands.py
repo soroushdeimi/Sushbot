@@ -30,22 +30,27 @@ from services.fulfillment import fulfill_purchase
 from services.state_machine import release_lock, try_lock
 from services.wallet import apply_wallet_tx
 from utils.security import generate_referral_code, hash_password
+from utils.admin_check import get_admin
 
 if TYPE_CHECKING:
     from telegram.ext import Application
 
 
 async def _require_support_admin(db: AsyncSession, telegram_user_id: int) -> Admin | None:
-    u = await db.get(User, telegram_user_id)
-    if not u or u.role != UserRole.ADMIN:
-        return None
-    res = await db.execute(
-        select(Admin).where(Admin.user_id == telegram_user_id, Admin.is_active.is_(True))
-    )
-    a = res.scalars().first()
+    a = await get_admin(db, telegram_user_id)
     if not a or not a.can_manage_support:
         return None
     return a
+
+
+async def _require_admin(db: AsyncSession, telegram_user_id: int) -> Admin | None:
+    """Unified admin check used across admin handlers.
+
+    Accepts both:
+    - .env admin IDs (super admins + static admins)
+    - DB-promoted admins (users.role==ADMIN + active admins row)
+    """
+    return await get_admin(db, telegram_user_id)
 
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -517,7 +522,7 @@ async def admin_sync_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
         from database.models import Panel
 
         db_user = await db.get(User, user.id)
-        if not db_user or db_user.role != UserRole.ADMIN:
+        if not db_user or not await _require_admin(db, user.id):
             await update.message.reply_text("Admin only.")
             return
         svc = await db.get(Service, service_id)
@@ -567,7 +572,7 @@ async def admin_renew_command(update: Update, context: ContextTypes.DEFAULT_TYPE
         from database.models import Panel
 
         db_user = await db.get(User, user.id)
-        if not db_user or db_user.role != UserRole.ADMIN:
+        if not db_user or not await _require_admin(db, user.id):
             await update.message.reply_text("Admin only.")
             return
         svc = await db.get(Service, service_id)
@@ -607,7 +612,7 @@ async def admin_addgb_command(update: Update, context: ContextTypes.DEFAULT_TYPE
         from database.models import Panel
 
         db_user = await db.get(User, user.id)
-        if not db_user or db_user.role != UserRole.ADMIN:
+        if not db_user or not await _require_admin(db, user.id):
             await update.message.reply_text("Admin only.")
             return
         svc = await db.get(Service, service_id)
@@ -643,7 +648,7 @@ async def admin_rotate_command(update: Update, context: ContextTypes.DEFAULT_TYP
         from database.models import Panel
 
         db_user = await db.get(User, user.id)
-        if not db_user or db_user.role != UserRole.ADMIN:
+        if not db_user or not await _require_admin(db, user.id):
             await update.message.reply_text("Admin only.")
             return
         svc = await db.get(Service, service_id)
@@ -681,7 +686,7 @@ async def admin_payapprove_command(update: Update, context: ContextTypes.DEFAULT
     payment_id = int(context.args[0])
     async for db in get_db():
         db_user = await db.get(User, user.id)
-        if not db_user or db_user.role != UserRole.ADMIN:
+        if not db_user or not await _require_admin(db, user.id):
             await update.message.reply_text("Admin only.")
             return
         pay = await db.get(Payment, payment_id)
@@ -769,7 +774,7 @@ async def admin_payreject_command(update: Update, context: ContextTypes.DEFAULT_
     payment_id = int(context.args[0])
     async for db in get_db():
         db_user = await db.get(User, user.id)
-        if not db_user or db_user.role != UserRole.ADMIN:
+        if not db_user or not await _require_admin(db, user.id):
             await update.message.reply_text("Admin only.")
             return
         pay = await db.get(Payment, payment_id)
@@ -813,7 +818,7 @@ async def admin_setcard_command(update: Update, context: ContextTypes.DEFAULT_TY
     owner = " ".join(context.args[1:]).strip()
     async for db in get_db():
         db_user = await db.get(User, user.id)
-        if not db_user or db_user.role != UserRole.ADMIN:
+        if not db_user or not await _require_admin(db, user.id):
             await update.message.reply_text("Admin only.")
             return
         from services.runtime_settings import set_setting
@@ -836,7 +841,7 @@ async def admin_setnowpay_command(update: Update, context: ContextTypes.DEFAULT_
     ipn = context.args[1].strip()
     async for db in get_db():
         db_user = await db.get(User, user.id)
-        if not db_user or db_user.role != UserRole.ADMIN:
+        if not db_user or not await _require_admin(db, user.id):
             await update.message.reply_text("Admin only.")
             return
         from services.runtime_settings import set_setting
@@ -857,7 +862,7 @@ async def admin_setaqaye_command(update: Update, context: ContextTypes.DEFAULT_T
     pin = context.args[0].strip()
     async for db in get_db():
         db_user = await db.get(User, user.id)
-        if not db_user or db_user.role != UserRole.ADMIN:
+        if not db_user or not await _require_admin(db, user.id):
             await update.message.reply_text("Admin only.")
             return
         from services.runtime_settings import set_setting
@@ -881,7 +886,7 @@ async def admin_setfaq_command(update: Update, context: ContextTypes.DEFAULT_TYP
         return
     async for db in get_db():
         db_user = await db.get(User, user.id)
-        if not db_user or db_user.role != UserRole.ADMIN:
+        if not db_user or not await _require_admin(db, user.id):
             await update.message.reply_text("Admin only.")
             return
         from services.runtime_settings import set_setting
@@ -905,7 +910,7 @@ async def admin_settutorial_command(update: Update, context: ContextTypes.DEFAUL
         return
     async for db in get_db():
         db_user = await db.get(User, user.id)
-        if not db_user or db_user.role != UserRole.ADMIN:
+        if not db_user or not await _require_admin(db, user.id):
             await update.message.reply_text("Admin only.")
             return
         from services.runtime_settings import set_setting
@@ -921,7 +926,7 @@ async def admin_stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE
         return
     async for db in get_db():
         db_user = await db.get(User, user.id)
-        if not db_user or db_user.role != UserRole.ADMIN:
+        if not db_user or not await _require_admin(db, user.id):
             await update.message.reply_text("Admin only.")
             return
 
@@ -995,7 +1000,7 @@ async def admin_refund_command(update: Update, context: ContextTypes.DEFAULT_TYP
     reason = " ".join(context.args[1:]).strip() if len(context.args) > 1 else None
     async for db in get_db():
         db_user = await db.get(User, user.id)
-        if not db_user or db_user.role != UserRole.ADMIN:
+        if not db_user or not await _require_admin(db, user.id):
             await update.message.reply_text("Admin only.")
             return
 
@@ -1029,7 +1034,7 @@ async def admin_remove_service_command(update: Update, context: ContextTypes.DEF
     reason = " ".join(context.args[1:]).strip() if len(context.args) > 1 else None
     async for db in get_db():
         db_user = await db.get(User, user.id)
-        if not db_user or db_user.role != UserRole.ADMIN:
+        if not db_user or not await _require_admin(db, user.id):
             await update.message.reply_text("Admin only.")
             return
 
@@ -1054,7 +1059,7 @@ async def admin_panel_command(update: Update, context: ContextTypes.DEFAULT_TYPE
         return
     async for db in get_db():
         db_user = await db.get(User, user.id)
-        if not db_user or db_user.role != UserRole.ADMIN:
+        if not db_user or not await _require_admin(db, user.id):
             await update.message.reply_text("Admin only.")
             return
 
@@ -1092,7 +1097,7 @@ async def admin_transfer_service_command(
     reason = " ".join(context.args[2:]).strip() if len(context.args) > 2 else None
     async for db in get_db():
         db_user = await db.get(User, user.id)
-        if not db_user or db_user.role != UserRole.ADMIN:
+        if not db_user or not await _require_admin(db, user.id):
             await update.message.reply_text("Admin only.")
             return
 

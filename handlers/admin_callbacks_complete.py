@@ -44,6 +44,7 @@ from handlers.commands import (
 from integrations.factory import PanelFactory
 from services.fulfillment import fulfill_purchase
 from services.refund import remove_service
+from utils.admin_check import is_admin
 
 
 async def admin_main_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -57,7 +58,7 @@ async def admin_main_callback(update: Update, context: ContextTypes.DEFAULT_TYPE
 
     async for db in get_db():
         db_user = await db.get(User, user.id)
-        if not db_user or db_user.role != UserRole.ADMIN:
+        if not db_user or not await is_admin(db, user.id):
             await query.answer("Admin only.", show_alert=True)
             return
 
@@ -88,7 +89,7 @@ async def admin_payments_pending_callback(
 
     async for db in get_db():
         db_user = await db.get(User, user.id)
-        if not db_user or db_user.role != UserRole.ADMIN:
+        if not db_user or not await is_admin(db, user.id):
             await query.answer("Admin only.", show_alert=True)
             return
 
@@ -126,7 +127,7 @@ async def admin_payment_detail_callback(
 
     async for db in get_db():
         db_user = await db.get(User, user.id)
-        if not db_user or db_user.role != UserRole.ADMIN:
+        if not db_user or not await is_admin(db, user.id):
             await query.answer("Admin only.", show_alert=True)
             return
 
@@ -191,7 +192,7 @@ async def admin_payment_approve_callback(
 
     async for db in get_db():
         db_user = await db.get(User, user.id)
-        if not db_user or db_user.role != UserRole.ADMIN:
+        if not db_user or not await is_admin(db, user.id):
             await query.answer("Admin only.", show_alert=True)
             return
 
@@ -277,7 +278,7 @@ async def admin_payment_reject_callback(
 
     async for db in get_db():
         db_user = await db.get(User, user.id)
-        if not db_user or db_user.role != UserRole.ADMIN:
+        if not db_user or not await is_admin(db, user.id):
             await query.answer("Admin only.", show_alert=True)
             return
 
@@ -328,7 +329,7 @@ async def admin_stats_callback(update: Update, context: ContextTypes.DEFAULT_TYP
 
     async for db in get_db():
         db_user = await db.get(User, user.id)
-        if not db_user or db_user.role != UserRole.ADMIN:
+        if not db_user or not await is_admin(db, user.id):
             await query.answer("Admin only.", show_alert=True)
             return
 
@@ -376,7 +377,7 @@ async def admin_users_callback(
 
     async for db in get_db():
         db_user = await db.get(User, user.id)
-        if not db_user or db_user.role != UserRole.ADMIN:
+        if not db_user or not await is_admin(db, user.id):
             await query.answer("Admin only.", show_alert=True)
             return
 
@@ -402,7 +403,7 @@ async def admin_user_detail_callback(
 
     async for db in get_db():
         db_user = await db.get(User, user.id)
-        if not db_user or db_user.role != UserRole.ADMIN:
+        if not db_user or not await is_admin(db, user.id):
             await query.answer("Admin only.", show_alert=True)
             return
 
@@ -452,7 +453,7 @@ async def admin_services_callback(
 
     async for db in get_db():
         db_user = await db.get(User, user.id)
-        if not db_user or db_user.role != UserRole.ADMIN:
+        if not db_user or not await is_admin(db, user.id):
             await query.answer("Admin only.", show_alert=True)
             return
 
@@ -478,7 +479,7 @@ async def admin_service_detail_callback(
 
     async for db in get_db():
         db_user = await db.get(User, user.id)
-        if not db_user or db_user.role != UserRole.ADMIN:
+        if not db_user or not await is_admin(db, user.id):
             await query.answer("Admin only.", show_alert=True)
             return
 
@@ -523,7 +524,7 @@ async def admin_service_sync_callback(
 
     async for db in get_db():
         db_user = await db.get(User, user.id)
-        if not db_user or db_user.role != UserRole.ADMIN:
+        if not db_user or not await is_admin(db, user.id):
             await query.answer("Admin only.", show_alert=True)
             return
 
@@ -577,7 +578,7 @@ async def admin_service_renew_callback(
 
     async for db in get_db():
         db_user = await db.get(User, user.id)
-        if not db_user or db_user.role != UserRole.ADMIN:
+        if not db_user or not await is_admin(db, user.id):
             await query.answer("Admin only.", show_alert=True)
             return
 
@@ -606,7 +607,7 @@ async def admin_service_addgb_callback(
 
     async for db in get_db():
         db_user = await db.get(User, user.id)
-        if not db_user or db_user.role != UserRole.ADMIN:
+        if not db_user or not await is_admin(db, user.id):
             await query.answer("Admin only.", show_alert=True)
             return
 
@@ -635,7 +636,7 @@ async def admin_service_rotate_callback(
 
     async for db in get_db():
         db_user = await db.get(User, user.id)
-        if not db_user or db_user.role != UserRole.ADMIN:
+        if not db_user or not await is_admin(db, user.id):
             await query.answer("Admin only.", show_alert=True)
             return
 
@@ -664,7 +665,7 @@ async def admin_service_remove_callback(
 
     async for db in get_db():
         db_user = await db.get(User, user.id)
-        if not db_user or db_user.role != UserRole.ADMIN:
+        if not db_user or not await is_admin(db, user.id):
             await query.answer("Admin only.", show_alert=True)
             return
 
@@ -695,7 +696,7 @@ async def admin_products_callback(update: Update, context: ContextTypes.DEFAULT_
 
     async for db in get_db():
         db_user = await db.get(User, user.id)
-        if not db_user or db_user.role != UserRole.ADMIN:
+        if not db_user or not await is_admin(db, user.id):
             await query.answer("Admin only.", show_alert=True)
             return
 
@@ -724,7 +725,7 @@ async def admin_tickets_callback(update: Update, context: ContextTypes.DEFAULT_T
 
     async for db in get_db():
         db_user = await db.get(User, user.id)
-        if not db_user or db_user.role != UserRole.ADMIN:
+        if not db_user or not await is_admin(db, user.id):
             await query.answer("Admin only.", show_alert=True)
             return
 
@@ -755,7 +756,7 @@ async def admin_settings_callback(update: Update, context: ContextTypes.DEFAULT_
 
     async for db in get_db():
         db_user = await db.get(User, user.id)
-        if not db_user or db_user.role != UserRole.ADMIN:
+        if not db_user or not await is_admin(db, user.id):
             await query.answer("Admin only.", show_alert=True)
             return
 
@@ -774,7 +775,7 @@ async def admin_set_card_callback(update: Update, context: ContextTypes.DEFAULT_
 
     async for db in get_db():
         db_user = await db.get(User, user.id)
-        if not db_user or db_user.role != UserRole.ADMIN:
+        if not db_user or not await is_admin(db, user.id):
             await query.answer("Admin only.", show_alert=True)
             return
 
@@ -795,7 +796,7 @@ async def admin_set_nowpay_callback(update: Update, context: ContextTypes.DEFAUL
 
     async for db in get_db():
         db_user = await db.get(User, user.id)
-        if not db_user or db_user.role != UserRole.ADMIN:
+        if not db_user or not await is_admin(db, user.id):
             await query.answer("Admin only.", show_alert=True)
             return
 
@@ -816,7 +817,7 @@ async def admin_set_aqaye_callback(update: Update, context: ContextTypes.DEFAULT
 
     async for db in get_db():
         db_user = await db.get(User, user.id)
-        if not db_user or db_user.role != UserRole.ADMIN:
+        if not db_user or not await is_admin(db, user.id):
             await query.answer("Admin only.", show_alert=True)
             return
 
@@ -837,7 +838,7 @@ async def admin_set_faq_callback(update: Update, context: ContextTypes.DEFAULT_T
 
     async for db in get_db():
         db_user = await db.get(User, user.id)
-        if not db_user or db_user.role != UserRole.ADMIN:
+        if not db_user or not await is_admin(db, user.id):
             await query.answer("Admin only.", show_alert=True)
             return
 
@@ -858,7 +859,7 @@ async def admin_set_tutorial_callback(update: Update, context: ContextTypes.DEFA
 
     async for db in get_db():
         db_user = await db.get(User, user.id)
-        if not db_user or db_user.role != UserRole.ADMIN:
+        if not db_user or not await is_admin(db, user.id):
             await query.answer("Admin only.", show_alert=True)
             return
 

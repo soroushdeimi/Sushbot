@@ -172,3 +172,82 @@ async def admin_user_services_callback(
                 text += f"#{svc.id} - {svc.protocol.upper()} - {svc.status.value}\n"
 
         await query.edit_message_text(text, reply_markup=admin_user_detail_keyboard(user_id))
+
+
+async def admin_user_purchases_callback(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, user_id: int
+) -> None:
+    """Show user's purchase history."""
+    query = update.callback_query
+    if not query:
+        return
+    user = update.effective_user
+    if not user:
+        return
+
+    async for db in get_db():
+        from handlers.commands import _require_admin
+        from database.models import Purchase
+
+        admin = await _require_admin(db, user.id)
+        if not admin:
+            await query.answer("Admin only.", show_alert=True)
+            return
+
+        db_user = await db.get(User, user_id)
+        if not db_user:
+            await query.edit_message_text("❌ کاربر پیدا نشد.")
+            return
+
+        res = await db.execute(
+            select(Purchase).where(Purchase.user_id == user_id).order_by(Purchase.id.desc())
+        )
+        purchases = list(res.scalars().all())
+
+        if not purchases:
+            text = f"📭 کاربر {db_user.username or f'User {user_id}'} هیچ خریدی نداشته."
+        else:
+            text = f"📜 تاریخچه خرید کاربر: {db_user.username or f'User {user_id}'}\n\n"
+            for p in purchases[:10]:  # Show first 10
+                text += f"#{p.id} - {int(p.final_amount):,}T - {p.status.value}\n"
+
+        await query.edit_message_text(text, reply_markup=admin_user_detail_keyboard(user_id))
+
+
+async def admin_user_ban_callback(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, user_id: int
+) -> None:
+    """Toggle user ban status."""
+    query = update.callback_query
+    if not query:
+        return
+    user = update.effective_user
+    if not user:
+        return
+
+    async for db in get_db():
+        from handlers.commands import _require_admin
+        from database.models import UserStatus
+
+        admin = await _require_admin(db, user.id)
+        if not admin:
+            await query.answer("Admin only.", show_alert=True)
+            return
+
+        db_user = await db.get(User, user_id)
+        if not db_user:
+            await query.edit_message_text("❌ کاربر پیدا نشد.")
+            return
+
+        # Toggle ban status
+        if db_user.status == UserStatus.BANNED:
+            db_user.status = UserStatus.ACTIVE
+            status_text = "فعال"
+        else:
+            db_user.status = UserStatus.BANNED
+            status_text = "مسدود"
+
+        await db.commit()
+
+        await query.answer(f"کاربر {status_text} شد.", show_alert=True)
+        await admin_user_detail_callback(update, context, user_id)

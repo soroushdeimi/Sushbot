@@ -59,10 +59,14 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     if data.startswith("payment_card_") and not is_enabled("pay_card_to_card"):
         await query.edit_message_text("This feature is disabled.")
         return
-    if data.startswith("payment_nowpayments_") and not is_enabled("pay_nowpayments"):
+    if data.startswith(("payment_nowpayments_", "payment_nowpay_")) and not is_enabled(
+        "pay_nowpayments"
+    ):
         await query.edit_message_text("This feature is disabled.")
         return
-    if data.startswith("payment_aqayepardakht_") and not is_enabled("pay_aqayepardakht"):
+    if data.startswith(("payment_aqayepardakht_", "payment_aqaye_")) and not is_enabled(
+        "pay_aqayepardakht"
+    ):
         await query.edit_message_text("This feature is disabled.")
         return
     if data == "wallet" or data.startswith("wallet_") or data == "gift_code":
@@ -75,6 +79,13 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     if data in {"faq", "tutorial"} and not is_enabled("content_cms"):
         # We still allow basic placeholder content if CMS is off.
         pass
+
+    # Settings callbacks (cfg_* prefix)
+    if data.startswith("cfg_"):
+        from handlers.admin_settings import settings_callback_router
+
+        await settings_callback_router(update, context)
+        return
 
     # Admin callbacks (check first)
     if data.startswith("admin_"):
@@ -116,10 +127,13 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         # - confirm_purchase_{product_id}_proto_{protocol}
         # - confirm_purchase_{product_id}_proto_{protocol}_{discount_code}
         await confirm_purchase_callback_handler(update, context, data)
+    elif data.startswith("purchase_pay_"):
+        # purchase_pay_{product_id}_{discount_code}
+        await purchase_pay_callback(update, context, data)
     elif data.startswith("cancel_order_"):
         order_id = int(data.split("_")[-1])
         await cancel_order_callback(update, context, order_id)
-    elif data.startswith("svc_"):
+    elif data.startswith(("svc_", "service_")):
         await service_router(update, context, data)
     elif data == "faq":
         await faq_callback(update, context)
@@ -389,6 +403,9 @@ async def service_router(update: Update, context: ContextTypes.DEFAULT_TYPE, dat
         return
     # svc_<action>_<service_id>...
     action = parts[1]
+    # Backward-compat aliases (older keyboards)
+    if action == "config":
+        action = "send"
     if action == "sub" and len(parts) >= 3 and parts[2].isdigit():
         await service_send_sub(update, context, int(parts[2]))
         return
@@ -410,11 +427,14 @@ async def service_router(update: Update, context: ContextTypes.DEFAULT_TYPE, dat
     if (
         action in {"reset", "rotate", "revoke"}
         and len(parts) >= 4
-        and parts[2] == "yes"
+        and parts[2] in {"yes", "no"}
         and parts[3].isdigit()
     ):
         sid = int(parts[3])
-        await service_execute_action(update, context, sid, action)
+        if parts[2] == "yes":
+            await service_execute_action(update, context, sid, action)
+        else:
+            await service_detail_callback(update, context, sid)
         return
     if action == "apply" and len(parts) >= 5 and parts[2] in {"renew", "add"}:
         act = parts[2]
@@ -552,7 +572,16 @@ async def service_confirm_callback(
         txt = "ریوک/روتیت انجام شود؟ (کانفیگ جدید می‌گیرید)"
     if action == "revoke":
         txt = "ریوک سابسکریپشن انجام شود؟ (لینک قبلی از کار می‌افتد)"
-    await query.edit_message_text(txt, reply_markup=confirm_action_keyboard(action, service_id))
+    await query.edit_message_text(
+        txt,
+        reply_markup=confirm_action_keyboard(
+            action,
+            service_id,
+            prefix="svc",
+            confirm_token="yes",
+            cancel_token="no",
+        ),
+    )
 
 
 async def service_execute_action(
@@ -1365,6 +1394,29 @@ async def confirm_purchase_callback(
         await release_lock(user.id)
 
 
+async def purchase_pay_callback(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, data: str
+) -> None:
+    """Handle purchase_pay_{product_id}_{discount_code} callback.
+
+    This is a legacy callback that redirects to confirm_purchase.
+    """
+    query = update.callback_query
+    if not query:
+        return
+
+    # Parse: purchase_pay_{product_id}_{discount_code_optional}
+    rest = data.removeprefix("purchase_pay_")
+    parts = rest.split("_", 1)
+
+    if len(parts) >= 1 and parts[0].isdigit():
+        product_id = int(parts[0])
+        discount_code = parts[1].strip() if len(parts) > 1 and parts[1] else None
+        await confirm_purchase_callback(update, context, product_id, discount_code)
+    else:
+        await query.edit_message_text("Invalid purchase data.")
+
+
 async def faq_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     if not query or not query.message:
@@ -1526,6 +1578,11 @@ async def payment_callback(
         await query.edit_message_text("Invalid payment action.")
         return
     _, gw, purchase_id_s = parts
+    # Backward-compat aliases from older keyboards
+    if gw == "nowpay":
+        gw = "nowpayments"
+    if gw == "aqaye":
+        gw = "aqayepardakht"
     try:
         purchase_id = int(purchase_id_s)
     except ValueError:
@@ -1815,7 +1872,7 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE, data:
         await admin_users_callback(update, context)
     elif data.startswith("admin_users_page_"):
         page = int(data.split("_")[-1])
-        await admin_users_callback(update, context)
+        await admin_users_callback(update, context, page=page)
     elif data.startswith("admin_user_detail_"):
         user_id = int(data.split("_")[-1])
         from handlers.admin_callbacks_complete import (
@@ -1828,7 +1885,7 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE, data:
         await admin_services_callback(update, context)
     elif data.startswith("admin_services_page_"):
         page = int(data.split("_")[-1])
-        await admin_services_callback(update, context)
+        await admin_services_callback(update, context, page=page)
     elif data.startswith("admin_service_detail_"):
         service_id = int(data.split("_")[-1])
         from handlers.admin_callbacks_complete import (
@@ -1945,6 +2002,64 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE, data:
         )
 
         await admin_set_tutorial(update, context)
+    # User management actions
+    elif data.startswith("admin_user_balance_"):
+        user_id = int(data.split("_")[-1])
+        from handlers.admin_users import admin_user_balance_callback
+
+        await admin_user_balance_callback(update, context, user_id)
+    elif data.startswith("admin_user_services_"):
+        user_id = int(data.split("_")[-1])
+        from handlers.admin_users import admin_user_services_callback
+
+        await admin_user_services_callback(update, context, user_id)
+    elif data.startswith("admin_user_purchases_"):
+        user_id = int(data.split("_")[-1])
+        from handlers.admin_users import admin_user_purchases_callback
+
+        await admin_user_purchases_callback(update, context, user_id)
+    elif data.startswith("admin_user_ban_"):
+        user_id = int(data.split("_")[-1])
+        from handlers.admin_users import admin_user_ban_callback
+
+        await admin_user_ban_callback(update, context, user_id)
+    # Stats actions
+    elif data == "admin_stats_refresh":
+        from handlers.admin_stats import admin_stats_callback
+
+        await admin_stats_callback(update, context)
+    elif data == "admin_stats_detailed":
+        from handlers.admin_stats import admin_stats_detailed_callback
+
+        await admin_stats_detailed_callback(update, context)
+    elif data == "admin_health_refresh":
+        from handlers.admin_stats import admin_health_callback
+
+        await admin_health_callback(update, context)
+    # Broadcast actions
+    elif data.startswith("broadcast_confirm:"):
+        from handlers.admin_handlers import broadcast_confirm_callback
+
+        await broadcast_confirm_callback(update, context)
+    elif data == "broadcast_cancel":
+        from handlers.admin_handlers import broadcast_cancel_callback
+
+        await broadcast_cancel_callback(update, context)
+    # Coupon actions
+    elif data == "admin_coupon_create":
+        from handlers.admin_coupons import admin_coupon_create_callback
+
+        await admin_coupon_create_callback(update, context)
+    elif data == "admin_coupons_all":
+        from handlers.admin_coupons import admin_coupons_all_callback
+
+        await admin_coupons_all_callback(update, context)
+    # Panel edit
+    elif data.startswith("admin_panel_edit_"):
+        panel_id = int(data.split("_")[-1])
+        from handlers.admin_panels import admin_panel_edit_callback
+
+        await admin_panel_edit_callback(update, context, panel_id)
     else:
         await update.callback_query.answer("Unknown admin action.", show_alert=True)
 
