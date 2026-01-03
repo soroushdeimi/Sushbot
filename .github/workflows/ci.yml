@@ -35,7 +35,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install ruff bandit[toml] mypy
+          pip install ruff bandit[toml] bandit-sarif-formatter mypy
 
       - name: Ruff Lint
         run: ruff check . --output-format=github
@@ -45,7 +45,7 @@ jobs:
 
       - name: Bandit Security Scan
         run: |
-          bandit -c pyproject.toml -r . -f sarif -o bandit.sarif --exit-zero
+          bandit -c pyproject.toml -r . -f sarif -o bandit.sarif --exit-zero || true
           bandit -c pyproject.toml -r . -ll || true
 
       - name: Upload Bandit SARIF
