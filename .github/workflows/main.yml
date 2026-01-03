@@ -54,8 +54,8 @@ on:
 env:
   PYTHON_VERSION: "3.12"
   # PostgreSQL test database credentials (NOT production - safe to expose)
-  POSTGRES_USER: test_user
-  POSTGRES_PASSWORD: test_password_ci_only
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: postgres
   POSTGRES_DB: test_sushbotseller
 
 # =============================================================================
@@ -346,6 +346,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install -r requirements-dev.txt
+          pip install -e .
 
       # -----------------------------------------------------------------------
       # Step: Run Pytest
@@ -367,6 +368,7 @@ jobs:
           SUPER_ADMIN_TELEGRAM_ID: "12345"
           SECRET_KEY: "test-secret-key-not-for-production"
           JWT_SECRET: "test-jwt-secret-not-for-production"
+          PYTHONPATH: ${{ github.workspace }}
         run: |
           echo "🧪 Running test suite..."
           pytest tests/ \
@@ -378,19 +380,7 @@ jobs:
             --cov-report=term-missing \
             --cov-fail-under=20
 
-      # -----------------------------------------------------------------------
-      # Step: Upload coverage to Codecov
-      # -----------------------------------------------------------------------
-      # Codecov provides a nice dashboard to visualize test coverage.
-      # You can add a coverage badge to your README!
-      # -----------------------------------------------------------------------
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        if: always()
-        with:
-          files: ./coverage.xml
-          fail_ci_if_error: false
-          token: ${{ secrets.CODECOV_TOKEN }}
+      # Note: Codecov upload removed - coverage report is available in test output
 
   # ===========================================================================
   # JOB 5: DOCKER BUILD VERIFICATION
