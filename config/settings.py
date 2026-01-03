@@ -78,6 +78,10 @@ class Settings(BaseSettings):
         default_factory=lambda: secrets.token_urlsafe(32),
         description="Secret key for encryption",
     )
+    panel_ssl_verify: bool = Field(
+        default=True,
+        description="Verify SSL certificates when connecting to admin panels. Set to False for self-signed certs.",
+    )
     jwt_secret: str = Field(
         default_factory=lambda: secrets.token_urlsafe(32),
         description="JWT secret key",
@@ -156,7 +160,10 @@ class Settings(BaseSettings):
     # Web Panel
     web_panel_enabled: bool = Field(default=True, description="Enable web panel")
     web_panel_port: int = Field(default=8080, description="Web panel port")
-    web_panel_host: str = Field(default="0.0.0.0", description="Web panel host")  # nosec B104 - Bind all interfaces is intentional for container deployments
+    web_panel_host: str = Field(
+        default="127.0.0.1",
+        description="Web panel host. Use 0.0.0.0 for Docker/container deployments.",
+    )
     web_panel_secret_key: str = Field(
         default_factory=lambda: secrets.token_urlsafe(32),
         description="Web panel secret key",

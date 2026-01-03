@@ -19,6 +19,7 @@ from typing import TYPE_CHECKING
 from loguru import logger
 from sqlalchemy import and_, func, or_, select
 
+from config.settings import settings
 from database.models import (
     DiscountCode,
     Panel,
@@ -526,8 +527,7 @@ async def check_panel_health(db: AsyncSession, panel_id: int) -> PanelHealth:
     start_time = asyncio.get_event_loop().time()
 
     try:
-        # nosec B501 - Admin panels often use self-signed certificates
-        async with httpx.AsyncClient(timeout=10.0, verify=False) as client:  # nosec B501
+        async with httpx.AsyncClient(timeout=10.0, verify=settings.panel_ssl_verify) as client:
             # Try to get token and check API
             if panel.panel_type == "marzban":
                 response = await client.post(
