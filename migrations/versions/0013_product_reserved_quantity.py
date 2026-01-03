@@ -12,10 +12,10 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.execute("ALTER TABLE products ADD COLUMN IF NOT EXISTS reserved_quantity INTEGER NOT NULL DEFAULT 0;")
+    op.execute(
+        "ALTER TABLE products ADD COLUMN IF NOT EXISTS reserved_quantity INTEGER NOT NULL DEFAULT 0;"
+    )
 
 
 def downgrade() -> None:
     op.execute("ALTER TABLE products DROP COLUMN IF EXISTS reserved_quantity;")
-
-

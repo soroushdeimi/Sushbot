@@ -18,5 +18,3 @@ def upgrade() -> None:
 def downgrade() -> None:
     # Postgres enums cannot easily remove values; keep as-is.
     pass
-
-

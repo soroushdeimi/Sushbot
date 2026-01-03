@@ -272,7 +272,11 @@ class MarzbanService(VPNPanelInterface):
                 # If it's a relative URL, make it absolute
                 if not subscription_url.startswith(("http://", "https://")):
                     base_url = self._client.api_url
-                    subscription_url = f"{base_url}{subscription_url}" if subscription_url.startswith("/") else f"{base_url}/{subscription_url}"
+                    subscription_url = (
+                        f"{base_url}{subscription_url}"
+                        if subscription_url.startswith("/")
+                        else f"{base_url}/{subscription_url}"
+                    )
 
                 return subscription_url
 
@@ -331,4 +335,3 @@ class MarzbanService(VPNPanelInterface):
     async def close(self) -> None:
         """Close connections and cleanup resources."""
         await self._client.close()
-

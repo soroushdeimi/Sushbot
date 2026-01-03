@@ -83,6 +83,7 @@ class PasarGuardDBClient:
 
     async def health_check(self) -> bool:
         """Cheap health check against PasarGuard DB."""
+
         async def _q() -> int:
             pool = await self._get_pool()
             async with pool.acquire() as conn:
@@ -351,7 +352,9 @@ class PasarGuardDBClient:
         pool = await self._get_pool()
         async with pool.acquire() as conn:
             if not data_limit_bytes or data_limit_bytes <= 0:
-                await conn.execute("UPDATE users SET data_limit = NULL WHERE username = $1", username)
+                await conn.execute(
+                    "UPDATE users SET data_limit = NULL WHERE username = $1", username
+                )
             else:
                 await conn.execute(
                     "UPDATE users SET data_limit = $2 WHERE username = $1",
@@ -385,9 +388,13 @@ class PasarGuardDBClient:
         """Set users.status (enum: active/disabled/limited/expired/on_hold)."""
         pool = await self._get_pool()
         async with pool.acquire() as conn:
-            await conn.execute("UPDATE users SET status = $2::userstatus WHERE username = $1", username, status)
+            await conn.execute(
+                "UPDATE users SET status = $2::userstatus WHERE username = $1", username, status
+            )
 
-    async def rotate_proxy_credentials(self, *, username: str, flow: str = "xtls-rprx-vision") -> dict[str, Any]:
+    async def rotate_proxy_credentials(
+        self, *, username: str, flow: str = "xtls-rprx-vision"
+    ) -> dict[str, Any]:
         """
         Rotate all proxy credentials (vless/vmess/trojan/ss) similar to 'revoke_sub' semantics.
         Returns updated proxy_settings dict.
@@ -409,7 +416,9 @@ class PasarGuardDBClient:
                 username,
                 json.dumps(proxy_settings),
             )
-            row = await conn.fetchrow("SELECT proxy_settings FROM users WHERE username = $1", username)
+            row = await conn.fetchrow(
+                "SELECT proxy_settings FROM users WHERE username = $1", username
+            )
             return {"proxy_settings": row["proxy_settings"]}
 
     async def get_user_stats(self, *, username: str) -> dict[str, Any]:
@@ -577,7 +586,9 @@ class PasarGuardDBClient:
         if proxy_settings is None:
             pool = await self._get_pool()
             async with pool.acquire() as conn:
-                row = await conn.fetchrow("SELECT proxy_settings FROM users WHERE username = $1", email)
+                row = await conn.fetchrow(
+                    "SELECT proxy_settings FROM users WHERE username = $1", email
+                )
                 if row and row["proxy_settings"]:
                     ps = row["proxy_settings"]
                     if isinstance(ps, str):
@@ -639,7 +650,9 @@ class PasarGuardDBClient:
                 "sni": sni or "",
                 "fp": fingerprint,
             }
-            b = base64.b64encode(json.dumps(obj, ensure_ascii=False).encode("utf-8")).decode("ascii")
+            b = base64.b64encode(json.dumps(obj, ensure_ascii=False).encode("utf-8")).decode(
+                "ascii"
+            )
             return f"vmess://{b}"
 
         if protocol == "trojan":
@@ -669,4 +682,3 @@ class PasarGuardDBClient:
 
 # Alias for backward compatibility
 PasarGuardClient = PasarGuardDBClient
-

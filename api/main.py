@@ -70,7 +70,9 @@ app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
 app.include_router(users.router, prefix="/api/users", tags=["Users"])
 app.include_router(panels.router, prefix="/api/panels", tags=["Panels"])
 app.include_router(products.router, prefix="/api/products", tags=["Products"])
-app.include_router(product_categories.router, prefix="/api/product-categories", tags=["Product Categories"])
+app.include_router(
+    product_categories.router, prefix="/api/product-categories", tags=["Product Categories"]
+)
 app.include_router(services.router, prefix="/api/services", tags=["Services"])
 app.include_router(payments.router, prefix="/api/payments", tags=["Payments"])
 app.include_router(tickets.router, prefix="/api/tickets", tags=["Tickets"])
@@ -102,4 +104,3 @@ if __name__ == "__main__":
         port=settings.web_panel_port,
         reload=True,
     )
-

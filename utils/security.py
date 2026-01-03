@@ -112,7 +112,9 @@ async def check_admin_status(user_id: int, *, check_env_first: bool = True) -> A
 
             if admin_record:
                 if not admin_record.is_active:
-                    return AdminCheckResult(is_admin=False, reason="admin_inactive", source="database")
+                    return AdminCheckResult(
+                        is_admin=False, reason="admin_inactive", source="database"
+                    )
 
                 # Parse permissions JSON if present
                 perms = set()
@@ -132,7 +134,9 @@ async def check_admin_status(user_id: int, *, check_env_first: bool = True) -> A
                 )
 
             # User has admin role but no Admin record - treat as basic admin
-            return AdminCheckResult(is_admin=True, level="admin", permissions=set(), source="database")
+            return AdminCheckResult(
+                is_admin=True, level="admin", permissions=set(), source="database"
+            )
 
     except Exception as e:
         logger.error(f"Error checking admin status for user {user_id}: {e}")
@@ -268,8 +272,10 @@ def support_admin_required(silent: bool = True) -> Callable[[Callable[P, R]], Ca
         silent=silent,
     )
 
+
 # Password hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
 
 def _normalize_password_for_bcrypt(password: str) -> str:
     """
@@ -353,4 +359,3 @@ def generate_tracking_code() -> str:
     timestamp = int(datetime.now(UTC).timestamp())
     random_part = secrets.token_urlsafe(8)[:8]
     return f"{timestamp}{random_part}".upper()
-

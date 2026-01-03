@@ -45,7 +45,9 @@ class User(Base, TimestampMixin, SoftDeleteMixin):
     username: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
     first_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     last_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    phone_number: Mapped[str | None] = mapped_column(String(20), nullable=True, unique=True, index=True)
+    phone_number: Mapped[str | None] = mapped_column(
+        String(20), nullable=True, unique=True, index=True
+    )
     phone_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     phone_verified_at: Mapped[datetime | None] = mapped_column(nullable=True)
 
@@ -53,7 +55,9 @@ class User(Base, TimestampMixin, SoftDeleteMixin):
     password_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     role: Mapped[UserRole] = mapped_column(default=UserRole.USER, nullable=False, index=True)
-    status: Mapped[UserStatus] = mapped_column(default=UserStatus.ACTIVE, nullable=False, index=True)
+    status: Mapped[UserStatus] = mapped_column(
+        default=UserStatus.ACTIVE, nullable=False, index=True
+    )
 
     language_code: Mapped[str | None] = mapped_column(String(10), nullable=True, default="fa")
     channel_member: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
@@ -61,16 +65,26 @@ class User(Base, TimestampMixin, SoftDeleteMixin):
     balance: Mapped[int] = mapped_column(default=0, nullable=False)  # Balance in Rials (Toman)
     total_spent: Mapped[int] = mapped_column(default=0, nullable=False)  # Total spent in Rials
 
-    referral_code: Mapped[str | None] = mapped_column(String(20), unique=True, nullable=True, index=True)
+    referral_code: Mapped[str | None] = mapped_column(
+        String(20), unique=True, nullable=True, index=True
+    )
     referred_by_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True, index=True)
 
     last_activity: Mapped[datetime | None] = mapped_column(nullable=True)
 
     # Relationships
-    services: Mapped[list[Service]] = relationship("Service", back_populates="user", lazy="selectin")
-    purchases: Mapped[list[Purchase]] = relationship("Purchase", back_populates="user", lazy="selectin")
-    trial_accounts: Mapped[list[TrialAccount]] = relationship("TrialAccount", back_populates="user", lazy="selectin")
-    support_tickets: Mapped[list[SupportTicket]] = relationship("SupportTicket", back_populates="user", lazy="selectin")
+    services: Mapped[list[Service]] = relationship(
+        "Service", back_populates="user", lazy="selectin"
+    )
+    purchases: Mapped[list[Purchase]] = relationship(
+        "Purchase", back_populates="user", lazy="selectin"
+    )
+    trial_accounts: Mapped[list[TrialAccount]] = relationship(
+        "TrialAccount", back_populates="user", lazy="selectin"
+    )
+    support_tickets: Mapped[list[SupportTicket]] = relationship(
+        "SupportTicket", back_populates="user", lazy="selectin"
+    )
     state: Mapped[UserState | None] = relationship(
         "UserState",
         back_populates="user",
@@ -102,4 +116,3 @@ class User(Base, TimestampMixin, SoftDeleteMixin):
     def is_verified(self) -> bool:
         """Check if user phone is verified."""
         return self.phone_verified
-

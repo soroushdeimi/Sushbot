@@ -29,5 +29,3 @@ def run_migrations_sync() -> None:
 async def run_migrations() -> None:
     """Async-safe wrapper (runs migrations in a thread to avoid event-loop conflicts)."""
     await asyncio.to_thread(run_migrations_sync)
-
-

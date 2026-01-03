@@ -67,7 +67,9 @@ async def transfer_service(
         },
     )
 
-    logger.info(f"Transferred service_id={service_id} from user_id={old_user_id} to user_id={new_user_id} admin_id={admin_id}")
+    logger.info(
+        f"Transferred service_id={service_id} from user_id={old_user_id} to user_id={new_user_id} admin_id={admin_id}"
+    )
     return {
         "status": "transferred",
         "service_id": service_id,
@@ -133,7 +135,9 @@ async def _migrate_marzban_location(
         logger.info(f"Deleted user {service.client_email} from old location")
     except PanelUserNotFoundError:
         # User might not exist in old location, continue anyway
-        logger.warning(f"User {service.client_email} not found in old location, continuing migration")
+        logger.warning(
+            f"User {service.client_email} not found in old location, continuing migration"
+        )
 
     # Create user in new location
     await panel_service.create_user(
@@ -142,7 +146,9 @@ async def _migrate_marzban_location(
         data_limit_bytes=user_stats.data_limit_bytes,
         protocol=service.protocol,
     )
-    logger.info(f"Created user {service.client_email} in new location with inbound_tag {new_inbound_tag}")
+    logger.info(
+        f"Created user {service.client_email} in new location with inbound_tag {new_inbound_tag}"
+    )
 
 
 async def change_service_location(
@@ -176,10 +182,16 @@ async def change_service_location(
         try:
             user_stats = await panel_service.get_user_stats(username=service.client_email)
         except PanelConnectionError as e:
-            logger.error(f"Cannot connect to panel {panel.name} to get user stats for service_id={service_id}: {e}")
-            raise ValueError(f"Cannot connect to panel {panel.name}. Please check panel configuration.") from e
+            logger.error(
+                f"Cannot connect to panel {panel.name} to get user stats for service_id={service_id}: {e}"
+            )
+            raise ValueError(
+                f"Cannot connect to panel {panel.name}. Please check panel configuration."
+            ) from e
         except (PanelError, PanelUserNotFoundError) as e:
-            logger.error(f"Panel error getting user stats for service_id={service_id} (user={service.client_email}): {e}")
+            logger.error(
+                f"Panel error getting user stats for service_id={service_id} (user={service.client_email}): {e}"
+            )
             raise ValueError(f"Failed to get user information from panel {panel.name}: {e}") from e
 
         # Migrate user to new location (panel-specific)
@@ -191,7 +203,9 @@ async def change_service_location(
                 raise ValueError(f"Unsupported panel type: {panel_type_str}")
 
             if panel_type == PanelType.PASARGUARD:
-                await _migrate_pasarguard_location(panel_service, service, new_inbound_tag, user_stats)
+                await _migrate_pasarguard_location(
+                    panel_service, service, new_inbound_tag, user_stats
+                )
             elif panel_type == PanelType.MARZBAN:
                 await _migrate_marzban_location(panel_service, service, new_inbound_tag, user_stats)
             else:
@@ -221,14 +235,19 @@ async def change_service_location(
             },
         )
 
-        logger.info(f"Changed location for service_id={service_id} to inbound_tag={new_inbound_tag} admin_id={admin_id}")
+        logger.info(
+            f"Changed location for service_id={service_id} to inbound_tag={new_inbound_tag} admin_id={admin_id}"
+        )
         return {
             "status": "location_changed",
             "service_id": service_id,
             "new_inbound_tag": new_inbound_tag,
         }
     except Exception as e:
-        logger.error(f"Unexpected error changing service location for service_id={service_id}: {e}", exc_info=True)
+        logger.error(
+            f"Unexpected error changing service location for service_id={service_id}: {e}",
+            exc_info=True,
+        )
         raise
     finally:
         if panel_service:
@@ -236,4 +255,3 @@ async def change_service_location(
                 await panel_service.close()
             except Exception as e:
                 logger.warning(f"Error closing panel service for panel {panel.name}: {e}")
-

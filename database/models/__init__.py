@@ -59,4 +59,3 @@ __all__ = [
     "ResellerQuota",
     "ProductCategory",
 ]
-

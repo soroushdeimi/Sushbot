@@ -31,11 +31,15 @@ class Product(Base, TimestampMixin, SoftDeleteMixin):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     panel_id: Mapped[int] = mapped_column(ForeignKey("panels.id"), nullable=False, index=True)
-    test_panel_id: Mapped[int | None] = mapped_column(ForeignKey("panels.id", ondelete="SET NULL"), nullable=True, index=True)
+    test_panel_id: Mapped[int | None] = mapped_column(
+        ForeignKey("panels.id", ondelete="SET NULL"), nullable=True, index=True
+    )
 
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    status: Mapped[ProductStatus] = mapped_column(default=ProductStatus.ACTIVE, nullable=False, index=True)
+    status: Mapped[ProductStatus] = mapped_column(
+        default=ProductStatus.ACTIVE, nullable=False, index=True
+    )
 
     # Pricing
     price: Mapped[int] = mapped_column(Numeric(15, 0), nullable=False)  # Price in Rials
@@ -47,7 +51,9 @@ class Product(Base, TimestampMixin, SoftDeleteMixin):
     protocol: Mapped[str] = mapped_column(String(50), nullable=False, default="vless")
 
     # Inventory
-    stock_quantity: Mapped[int | None] = mapped_column(Integer, nullable=True)  # None means unlimited
+    stock_quantity: Mapped[int | None] = mapped_column(
+        Integer, nullable=True
+    )  # None means unlimited
     sold_quantity: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     reserved_quantity: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     min_stock: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
@@ -59,13 +65,19 @@ class Product(Base, TimestampMixin, SoftDeleteMixin):
     sort_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
     # Category
-    category_id: Mapped[int | None] = mapped_column(ForeignKey("product_categories.id", ondelete="SET NULL"), nullable=True, index=True)
+    category_id: Mapped[int | None] = mapped_column(
+        ForeignKey("product_categories.id", ondelete="SET NULL"), nullable=True, index=True
+    )
 
     # Relationships
     panel: Mapped[Panel] = relationship("Panel", foreign_keys=[panel_id], back_populates="products")
     test_panel: Mapped[Panel | None] = relationship("Panel", foreign_keys=[test_panel_id])
-    category: Mapped[ProductCategory | None] = relationship("ProductCategory", back_populates="products")
-    purchases: Mapped[list[Purchase]] = relationship("Purchase", back_populates="product", lazy="selectin")
+    category: Mapped[ProductCategory | None] = relationship(
+        "ProductCategory", back_populates="products"
+    )
+    purchases: Mapped[list[Purchase]] = relationship(
+        "Purchase", back_populates="product", lazy="selectin"
+    )
 
     def __repr__(self) -> str:
         return f"<Product(id={self.id}, name={self.name}, price={self.price})>"
@@ -88,4 +100,3 @@ class Product(Base, TimestampMixin, SoftDeleteMixin):
     def is_unlimited_traffic(self) -> bool:
         """Check if product has unlimited traffic."""
         return self.traffic_gb == 0
-

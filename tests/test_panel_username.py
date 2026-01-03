@@ -17,6 +17,3 @@ def test_make_panel_username_truncation() -> None:
     u = make_panel_username(telegram_username=long, user_id=999, suffix="999")
     assert u.endswith("-999-999")
     assert len(u) == 128
-
-
-

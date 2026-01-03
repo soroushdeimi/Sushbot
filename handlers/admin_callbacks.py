@@ -61,7 +61,9 @@ async def admin_main_callback(update: Update, context: ContextTypes.DEFAULT_TYPE
         await query.edit_message_text(text, reply_markup=admin_main_keyboard())
 
 
-async def admin_payments_pending_callback(update: Update, context: ContextTypes.DEFAULT_TYPE, page: int = 0) -> None:
+async def admin_payments_pending_callback(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, page: int = 0
+) -> None:
     """List pending payments."""
     query = update.callback_query
     if not query:
@@ -108,10 +110,14 @@ async def admin_payments_pending_callback(update: Update, context: ContextTypes.
             f"📄 صفحه {page + 1} از {(len(payments) + 4) // 5}\n\n"
             f"برای مشاهده جزئیات یا تایید/رد، روی پرداخت مورد نظر کلیک کنید:"
         )
-        await query.edit_message_text(text, reply_markup=admin_payments_list_keyboard(payments, page=page))
+        await query.edit_message_text(
+            text, reply_markup=admin_payments_list_keyboard(payments, page=page)
+        )
 
 
-async def admin_payment_detail_callback(update: Update, context: ContextTypes.DEFAULT_TYPE, payment_id: int) -> None:
+async def admin_payment_detail_callback(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, payment_id: int
+) -> None:
     """Show payment details."""
     query = update.callback_query
     if not query:
@@ -164,6 +170,7 @@ async def admin_payment_detail_callback(update: Update, context: ContextTypes.DE
 
         if purchase.product_id:
             from database.models import Product
+
             product = await db.get(Product, purchase.product_id)
             if product:
                 text += f"\n📦 محصول: {product.name}\n"
@@ -174,7 +181,9 @@ async def admin_payment_detail_callback(update: Update, context: ContextTypes.DE
         await query.edit_message_text(text, reply_markup=admin_payment_detail_keyboard(payment_id))
 
 
-async def admin_payment_approve_callback(update: Update, context: ContextTypes.DEFAULT_TYPE, payment_id: int) -> None:
+async def admin_payment_approve_callback(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, payment_id: int
+) -> None:
     """Approve payment via callback."""
     query = update.callback_query
     if not query:
@@ -233,10 +242,14 @@ async def admin_payment_approve_callback(update: Update, context: ContextTypes.D
                     ensure_service_sub_token,
                     subscription_url_from_token,
                 )
+
                 tok = await ensure_service_sub_token(db, svc)
                 sub_url = subscription_url_from_token(tok)
                 sub_txt = f"\n\n🔗 Sub:\n{sub_url}" if sub_url else ""
-                await context.bot.send_message(chat_id=purchase.user_id, text=f"✅ پرداخت تایید شد.\n\n🔗 {svc.config_link}{sub_txt}")
+                await context.bot.send_message(
+                    chat_id=purchase.user_id,
+                    text=f"✅ پرداخت تایید شد.\n\n🔗 {svc.config_link}{sub_txt}",
+                )
             except Exception as e:
                 logger.warning(f"Failed to notify user {purchase.user_id}: {e}")
 
@@ -257,7 +270,9 @@ async def admin_payment_approve_callback(update: Update, context: ContextTypes.D
     await admin_payments_pending_callback(update, context)
 
 
-async def admin_payment_reject_callback(update: Update, context: ContextTypes.DEFAULT_TYPE, payment_id: int) -> None:
+async def admin_payment_reject_callback(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, payment_id: int
+) -> None:
     """Reject payment via callback."""
     query = update.callback_query
     if not query:
@@ -287,8 +302,10 @@ async def admin_payment_reject_callback(update: Update, context: ContextTypes.DE
             purchase.status = PurchaseStatus.FAILED
             if purchase.product_id:
                 from config.features import is_enabled
+
                 if is_enabled("inventory"):
                     from services.inventory import release_product_stock
+
                     await release_product_stock(db, product_id=int(purchase.product_id), quantity=1)
         pay.status = PaymentStatus.FAILED
         pay.admin_notes = "Rejected by admin"
@@ -298,7 +315,10 @@ async def admin_payment_reject_callback(update: Update, context: ContextTypes.DE
         await query.answer("❌ پرداخت رد شد.", show_alert=True)
         if purchase:
             try:
-                await context.bot.send_message(chat_id=purchase.user_id, text="❌ پرداخت شما رد شد. لطفاً با پشتیبانی تماس بگیرید.")
+                await context.bot.send_message(
+                    chat_id=purchase.user_id,
+                    text="❌ پرداخت شما رد شد. لطفاً با پشتیبانی تماس بگیرید.",
+                )
             except Exception as e:
                 logger.warning(f"Failed to notify user {purchase.user_id}: {e}")
 
@@ -324,7 +344,9 @@ async def admin_stats_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         # Overall stats
         total_users = (await db.execute(select(func.count(User.id)))).scalar() or 0
         active_services = (
-            await db.execute(select(func.count(Service.id)).where(Service.status == ServiceStatus.ACTIVE))
+            await db.execute(
+                select(func.count(Service.id)).where(Service.status == ServiceStatus.ACTIVE)
+            )
         ).scalar() or 0
         total_revenue = (
             await db.execute(
@@ -334,7 +356,9 @@ async def admin_stats_callback(update: Update, context: ContextTypes.DEFAULT_TYP
             )
         ).scalar() or 0
         pending_payments = (
-            await db.execute(select(func.count(Payment.id)).where(Payment.status == PaymentStatus.PENDING))
+            await db.execute(
+                select(func.count(Payment.id)).where(Payment.status == PaymentStatus.PENDING)
+            )
         ).scalar() or 0
 
         text = (
@@ -346,10 +370,13 @@ async def admin_stats_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         )
 
         from bot.admin_keyboards import admin_main_keyboard
+
         await query.edit_message_text(text, reply_markup=admin_main_keyboard())
 
 
-async def admin_users_callback(update: Update, context: ContextTypes.DEFAULT_TYPE, page: int = 0) -> None:
+async def admin_users_callback(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, page: int = 0
+) -> None:
     """List users."""
     query = update.callback_query
     if not query:
@@ -368,10 +395,14 @@ async def admin_users_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         users = list(res.scalars().all())
 
         text = f"👥 لیست کاربران ({len(users)} مورد)\n\n"
-        await query.edit_message_text(text, reply_markup=admin_users_list_keyboard(users, page=page))
+        await query.edit_message_text(
+            text, reply_markup=admin_users_list_keyboard(users, page=page)
+        )
 
 
-async def admin_services_callback(update: Update, context: ContextTypes.DEFAULT_TYPE, page: int = 0) -> None:
+async def admin_services_callback(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, page: int = 0
+) -> None:
     """List services."""
     query = update.callback_query
     if not query:
@@ -390,7 +421,9 @@ async def admin_services_callback(update: Update, context: ContextTypes.DEFAULT_
         services = list(res.scalars().all())
 
         text = f"🔧 لیست سرویس‌ها ({len(services)} مورد)\n\n"
-        await query.edit_message_text(text, reply_markup=admin_services_list_keyboard(services, page=page))
+        await query.edit_message_text(
+            text, reply_markup=admin_services_list_keyboard(services, page=page)
+        )
 
 
 async def admin_settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -410,4 +443,3 @@ async def admin_settings_callback(update: Update, context: ContextTypes.DEFAULT_
 
         text = "⚙️ تنظیمات\n\nلطفاً گزینه مورد نظر را انتخاب کنید:"
         await query.edit_message_text(text, reply_markup=admin_settings_keyboard())
-

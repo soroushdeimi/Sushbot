@@ -27,11 +27,15 @@ async def apply_wallet_tx(
     if new_bal < 0 and amount < 0:
         raise ValueError(f"Insufficient balance. Current: {u.balance}, Requested: {abs(amount)}")
     u.balance = new_bal
-    tx = WalletTransaction(user_id=user_id, tx_type=tx_type, amount=int(amount), balance_after=new_bal, ref=ref, note=note)
+    tx = WalletTransaction(
+        user_id=user_id,
+        tx_type=tx_type,
+        amount=int(amount),
+        balance_after=new_bal,
+        ref=ref,
+        note=note,
+    )
     db.add(tx)
     await db.commit()
     await db.refresh(tx)
     return tx
-
-
-

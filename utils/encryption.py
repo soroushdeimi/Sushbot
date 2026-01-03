@@ -23,7 +23,9 @@ class EncryptionManager:
             # Try to get from settings, or generate a new one
             encryption_key = getattr(settings, "encryption_key", None)
             if encryption_key:
-                cls._key = encryption_key.encode() if isinstance(encryption_key, str) else encryption_key
+                cls._key = (
+                    encryption_key.encode() if isinstance(encryption_key, str) else encryption_key
+                )
             else:
                 # Generate a new key (should be set in production!)
                 cls._key = Fernet.generate_key()
@@ -140,4 +142,3 @@ def decrypt_panel_credentials(encrypted_key: str) -> str:
         Decrypted plaintext string
     """
     return EncryptionManager.decrypt(encrypted_key)
-

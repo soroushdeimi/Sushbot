@@ -20,7 +20,7 @@ def test_generate_qr_image_returns_png():
     # Check PNG magic bytes
     content = result.getvalue()
     assert len(content) > 0
-    assert content[:8] == b'\x89PNG\r\n\x1a\n'
+    assert content[:8] == b"\x89PNG\r\n\x1a\n"
 
 
 def test_generate_qr_image_handles_long_urls():

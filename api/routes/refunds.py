@@ -79,4 +79,3 @@ async def remove_service_endpoint(
         return result
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-

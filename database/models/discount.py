@@ -26,10 +26,14 @@ class DiscountCode(Base, TimestampMixin, SoftDeleteMixin):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
 
     code: Mapped[str] = mapped_column(String(50), unique=True, nullable=False, index=True)
-    discount_type: Mapped[DiscountType] = mapped_column(default=DiscountType.PERCENTAGE, nullable=False)
+    discount_type: Mapped[DiscountType] = mapped_column(
+        default=DiscountType.PERCENTAGE, nullable=False
+    )
 
     # Discount value
-    discount_value: Mapped[int] = mapped_column(Numeric(10, 2), nullable=False)  # Percentage or fixed amount
+    discount_value: Mapped[int] = mapped_column(
+        Numeric(10, 2), nullable=False
+    )  # Percentage or fixed amount
 
     # Usage limits
     max_uses: Mapped[int | None] = mapped_column(Integer, nullable=True)  # None means unlimited
@@ -68,4 +72,3 @@ class DiscountCode(Base, TimestampMixin, SoftDeleteMixin):
         if self.discount_type == DiscountType.PERCENTAGE:
             return int((amount * self.discount_value) / 100)
         return int(self.discount_value)
-

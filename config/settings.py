@@ -33,7 +33,9 @@ class Settings(BaseSettings):
     )
     database_pool_size: int = Field(default=10, description="Database connection pool size")
     database_max_overflow: int = Field(default=20, description="Database max overflow")
-    run_migrations_on_startup: bool = Field(default=True, description="Run Alembic migrations on startup")
+    run_migrations_on_startup: bool = Field(
+        default=True, description="Run Alembic migrations on startup"
+    )
 
     # PasarGuard Integration
     pasarguard_api_url: str = Field(
@@ -56,12 +58,20 @@ class Settings(BaseSettings):
     nowpayments_api_key: str | None = Field(default=None, description="NowPayments API key")
     nowpayments_ipn_secret: str | None = Field(default=None, description="NowPayments IPN secret")
     aqayepardakht_api_key: str | None = Field(default=None, description="Aqayepardakht API key")
-    aqayepardakht_gateway_id: str | None = Field(default=None, description="Aqayepardakht gateway ID")
-    public_base_url: str | None = Field(default=None, description="Public base URL for webhook/callbacks (https://...)")
+    aqayepardakht_gateway_id: str | None = Field(
+        default=None, description="Aqayepardakht gateway ID"
+    )
+    public_base_url: str | None = Field(
+        default=None, description="Public base URL for webhook/callbacks (https://...)"
+    )
 
     # Card-to-card
-    card_to_card_number: str | None = Field(default=None, description="Destination card number for card-to-card payments")
-    card_to_card_owner: str | None = Field(default=None, description="Card owner name for card-to-card payments")
+    card_to_card_number: str | None = Field(
+        default=None, description="Destination card number for card-to-card payments"
+    )
+    card_to_card_owner: str | None = Field(
+        default=None, description="Card owner name for card-to-card payments"
+    )
 
     # Security
     secret_key: str = Field(
@@ -116,18 +126,32 @@ class Settings(BaseSettings):
     trial_traffic_gb: int = Field(default=5, description="Trial traffic in GB")
 
     # Usage Sync (PasarGuard DB -> bot DB)
-    usage_sync_enabled: bool = Field(default=False, description="Enable periodic sync of usage from PasarGuard")
-    usage_sync_interval_seconds: int = Field(default=300, description="Usage sync interval in seconds")
+    usage_sync_enabled: bool = Field(
+        default=False, description="Enable periodic sync of usage from PasarGuard"
+    )
+    usage_sync_interval_seconds: int = Field(
+        default=300, description="Usage sync interval in seconds"
+    )
     usage_sync_batch_size: int = Field(default=50, description="Max services to sync per run")
 
     # Automation
     automation_enabled: bool = Field(default=True, description="Enable background automation jobs")
     expiry_reminder_enabled: bool = Field(default=True, description="Enable expiry reminders")
-    expiry_reminder_threshold_hours: int = Field(default=48, description="Notify when expiry within threshold hours")
-    low_traffic_reminder_enabled: bool = Field(default=True, description="Enable low traffic reminders")
-    low_traffic_threshold_gb: int = Field(default=2, description="Notify when remaining traffic <= threshold GB")
-    payment_reconcile_enabled: bool = Field(default=False, description="Enable payment reconciliation for online gateways")
-    payment_reconcile_interval_seconds: int = Field(default=300, description="Reconcile interval in seconds")
+    expiry_reminder_threshold_hours: int = Field(
+        default=48, description="Notify when expiry within threshold hours"
+    )
+    low_traffic_reminder_enabled: bool = Field(
+        default=True, description="Enable low traffic reminders"
+    )
+    low_traffic_threshold_gb: int = Field(
+        default=2, description="Notify when remaining traffic <= threshold GB"
+    )
+    payment_reconcile_enabled: bool = Field(
+        default=False, description="Enable payment reconciliation for online gateways"
+    )
+    payment_reconcile_interval_seconds: int = Field(
+        default=300, description="Reconcile interval in seconds"
+    )
 
     # Web Panel
     web_panel_enabled: bool = Field(default=True, description="Enable web panel")
@@ -159,10 +183,18 @@ class Settings(BaseSettings):
 
     # Affiliate / Referral (Premium)
     affiliate_enabled: bool = Field(default=True, description="Enable affiliate/referral program")
-    affiliate_first_purchase_only: bool = Field(default=True, description="Reward only on the referred user's first completed purchase")
-    affiliate_commission_percent: int = Field(default=5, description="Affiliate commission percentage (0-100)")
-    affiliate_fixed_reward: int = Field(default=0, description="Fixed affiliate reward amount in IRR to add on top of percent")
-    affiliate_min_purchase_amount: int = Field(default=0, description="Minimum final_amount (IRR) to qualify for affiliate reward")
+    affiliate_first_purchase_only: bool = Field(
+        default=True, description="Reward only on the referred user's first completed purchase"
+    )
+    affiliate_commission_percent: int = Field(
+        default=5, description="Affiliate commission percentage (0-100)"
+    )
+    affiliate_fixed_reward: int = Field(
+        default=0, description="Fixed affiliate reward amount in IRR to add on top of percent"
+    )
+    affiliate_min_purchase_amount: int = Field(
+        default=0, description="Minimum final_amount (IRR) to qualify for affiliate reward"
+    )
 
     @property
     def base_dir(self) -> Path:
@@ -190,4 +222,3 @@ class Settings(BaseSettings):
 
 # Global settings instance
 settings: Final[Settings] = Settings()
-

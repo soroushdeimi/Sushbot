@@ -49,7 +49,7 @@ async def test_nowpayments_create_payment_calls_api(monkeypatch):
     monkeypatch.setattr(httpx, "AsyncClient", DummyClient)
 
     gw = NowPaymentsGateway(api_key="API", ipn_secret="secret")
-    r = await gw.create_payment(amount=1.0, order_id="42", callback_url="https://cb.example/x", currency="USD")
+    r = await gw.create_payment(
+        amount=1.0, order_id="42", callback_url="https://cb.example/x", currency="USD"
+    )
     assert r["payment_id"] == "P1"
-
-

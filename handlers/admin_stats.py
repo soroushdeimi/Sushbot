@@ -47,27 +47,38 @@ async def admin_stats_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         )
 
         # Total revenue (completed purchases)
-        total_revenue = await db.scalar(
-            select(func.sum(Purchase.final_amount)).where(Purchase.status == PurchaseStatus.COMPLETED)
-        ) or 0
+        total_revenue = (
+            await db.scalar(
+                select(func.sum(Purchase.final_amount)).where(
+                    Purchase.status == PurchaseStatus.COMPLETED
+                )
+            )
+            or 0
+        )
 
         # Today's revenue
         today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
-        today_revenue = await db.scalar(
-            select(func.sum(Purchase.final_amount)).where(
-                Purchase.status == PurchaseStatus.COMPLETED,
-                Purchase.created_at >= today_start,
+        today_revenue = (
+            await db.scalar(
+                select(func.sum(Purchase.final_amount)).where(
+                    Purchase.status == PurchaseStatus.COMPLETED,
+                    Purchase.created_at >= today_start,
+                )
             )
-        ) or 0
+            or 0
+        )
 
         # This month's revenue
         month_start = datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        month_revenue = await db.scalar(
-            select(func.sum(Purchase.final_amount)).where(
-                Purchase.status == PurchaseStatus.COMPLETED,
-                Purchase.created_at >= month_start,
+        month_revenue = (
+            await db.scalar(
+                select(func.sum(Purchase.final_amount)).where(
+                    Purchase.status == PurchaseStatus.COMPLETED,
+                    Purchase.created_at >= month_start,
+                )
             )
-        ) or 0
+            or 0
+        )
 
         # Pending payments
         pending_payments = await db.scalar(
@@ -89,4 +100,3 @@ async def admin_stats_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         )
 
         await query.edit_message_text(text, reply_markup=admin_main_keyboard())
-

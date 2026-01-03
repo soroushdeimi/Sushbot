@@ -42,7 +42,10 @@ async def check_panel_capacity(db: AsyncSession, *, panel_id: int) -> tuple[bool
 
     # Check if at capacity
     if active_count >= panel.max_configs_per_panel:
-        return False, f"Panel {panel.name} is at capacity ({active_count}/{panel.max_configs_per_panel} configs)"
+        return (
+            False,
+            f"Panel {panel.name} is at capacity ({active_count}/{panel.max_configs_per_panel} configs)",
+        )
 
     return True, None
 
@@ -79,4 +82,3 @@ async def sync_panel_config_count(db: AsyncSession, *, panel_id: int) -> int:
     await db.commit()
 
     return actual_count
-

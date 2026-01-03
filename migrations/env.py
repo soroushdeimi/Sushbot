@@ -14,7 +14,9 @@ from database.models import Base
 config = context.config
 
 # Set SQLAlchemy URL from settings
-config.set_main_option("sqlalchemy.url", settings.database_url.replace("postgresql://", "postgresql+asyncpg://"))
+config.set_main_option(
+    "sqlalchemy.url", settings.database_url.replace("postgresql://", "postgresql+asyncpg://")
+)
 
 # Interpret the config file for Python logging.
 if config.config_file_name is not None:
@@ -71,4 +73,3 @@ if context.is_offline_mode():
     run_migrations_offline()
 else:
     run_migrations_online()
-

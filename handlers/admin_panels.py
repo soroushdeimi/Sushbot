@@ -20,7 +20,9 @@ from integrations.exceptions import PanelError
 from integrations.factory import PanelFactory
 
 
-async def admin_panels_list_callback(update: Update, context: ContextTypes.DEFAULT_TYPE, page: int = 0) -> None:
+async def admin_panels_list_callback(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, page: int = 0
+) -> None:
     """List all panels with pagination."""
     query = update.callback_query
     if not query:
@@ -37,7 +39,9 @@ async def admin_panels_list_callback(update: Update, context: ContextTypes.DEFAU
             await query.answer("Admin only.", show_alert=True)
             return
 
-        res = await db.execute(select(Panel).where(Panel.deleted_at.is_(None)).order_by(Panel.id.desc()))
+        res = await db.execute(
+            select(Panel).where(Panel.deleted_at.is_(None)).order_by(Panel.id.desc())
+        )
         panels = list(res.scalars().all())
 
         if not panels:
@@ -48,10 +52,14 @@ async def admin_panels_list_callback(update: Update, context: ContextTypes.DEFAU
             return
 
         text = f"🖥️ مدیریت پنل‌ها\n\nتعداد کل: {len(panels)}\n\n"
-        await query.edit_message_text(text, reply_markup=admin_panels_list_keyboard(panels, page=page))
+        await query.edit_message_text(
+            text, reply_markup=admin_panels_list_keyboard(panels, page=page)
+        )
 
 
-async def admin_panel_detail_callback(update: Update, context: ContextTypes.DEFAULT_TYPE, panel_id: int) -> None:
+async def admin_panel_detail_callback(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, panel_id: int
+) -> None:
     """Show panel details and actions."""
     query = update.callback_query
     if not query:
@@ -92,7 +100,9 @@ async def admin_panel_detail_callback(update: Update, context: ContextTypes.DEFA
         await query.edit_message_text(text, reply_markup=admin_panel_detail_keyboard(panel_id))
 
 
-async def admin_panel_test_connection_callback(update: Update, context: ContextTypes.DEFAULT_TYPE, panel_id: int) -> None:
+async def admin_panel_test_connection_callback(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, panel_id: int
+) -> None:
     """Test panel connection."""
     query = update.callback_query
     if not query:
@@ -191,7 +201,9 @@ async def admin_panel_add_callback(update: Update, context: ContextTypes.DEFAULT
         await query.edit_message_text(text)
 
 
-async def admin_panel_delete_callback(update: Update, context: ContextTypes.DEFAULT_TYPE, panel_id: int) -> None:
+async def admin_panel_delete_callback(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, panel_id: int
+) -> None:
     """Delete a panel (soft delete)."""
     query = update.callback_query
     if not query:
@@ -224,7 +236,9 @@ async def admin_panel_delete_callback(update: Update, context: ContextTypes.DEFA
         )
 
 
-async def admin_panel_stats_callback(update: Update, context: ContextTypes.DEFAULT_TYPE, panel_id: int) -> None:
+async def admin_panel_stats_callback(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, panel_id: int
+) -> None:
     """Show panel statistics."""
     query = update.callback_query
     if not query:
@@ -284,4 +298,3 @@ async def admin_panel_stats_callback(update: Update, context: ContextTypes.DEFAU
                 await panel_service.close()
 
         await query.edit_message_text(text, reply_markup=admin_panel_detail_keyboard(panel_id))
-

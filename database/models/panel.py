@@ -47,10 +47,14 @@ class Panel(Base, TimestampMixin, SoftDeleteMixin):
     type: Mapped[str | None] = mapped_column(String(50), nullable=True, default=None)
 
     # Additional fields for Marzban
-    username: Mapped[str | None] = mapped_column(String(255), nullable=True)  # Optional, can be in api_key
+    username: Mapped[str | None] = mapped_column(
+        String(255), nullable=True
+    )  # Optional, can be in api_key
     password: Mapped[str | None] = mapped_column(Text, nullable=True)  # Optional, encrypted if set
 
-    status: Mapped[PanelStatus] = mapped_column(default=PanelStatus.ACTIVE, nullable=False, index=True)
+    status: Mapped[PanelStatus] = mapped_column(
+        default=PanelStatus.ACTIVE, nullable=False, index=True
+    )
 
     # Settings
     is_test_panel: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
@@ -64,19 +68,20 @@ class Panel(Base, TimestampMixin, SoftDeleteMixin):
     # Configuration
     default_protocol: Mapped[str] = mapped_column(String(50), default="vless", nullable=False)
     default_port: Mapped[int] = mapped_column(Integer, default=8443, nullable=False)
-    inbound_tag: Mapped[str | None] = mapped_column(String(100), nullable=True, default="SUSH")  # For PasarGuard
+    inbound_tag: Mapped[str | None] = mapped_column(
+        String(100), nullable=True, default="SUSH"
+    )  # For PasarGuard
     config_template: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Notes
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Relationships
-    services: Mapped[list[Service]] = relationship("Service", back_populates="panel", lazy="selectin")
+    services: Mapped[list[Service]] = relationship(
+        "Service", back_populates="panel", lazy="selectin"
+    )
     products: Mapped[list[Product]] = relationship(
-        "Product",
-        foreign_keys="[Product.panel_id]",
-        back_populates="panel",
-        lazy="selectin"
+        "Product", foreign_keys="[Product.panel_id]", back_populates="panel", lazy="selectin"
     )
 
     def __repr__(self) -> str:
@@ -90,4 +95,3 @@ class Panel(Base, TimestampMixin, SoftDeleteMixin):
         if self.max_configs_per_panel:
             return self.current_config_count < self.max_configs_per_panel
         return True
-

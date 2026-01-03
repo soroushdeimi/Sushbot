@@ -87,4 +87,3 @@ async def create_service_config(
         }
     finally:
         await client.close()
-

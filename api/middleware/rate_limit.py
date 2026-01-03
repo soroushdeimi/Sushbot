@@ -69,4 +69,3 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         response.headers["X-RateLimit-Remaining"] = str(tokens - 1)
 
         return response
-

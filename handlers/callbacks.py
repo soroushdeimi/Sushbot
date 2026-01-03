@@ -29,7 +29,10 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         return
 
     from loguru import logger
-    logger.info(f"Incoming callback user_id={getattr(update.effective_user,'id',None)} data={query.data!r}")
+
+    logger.info(
+        f"Incoming callback user_id={getattr(update.effective_user, 'id', None)} data={query.data!r}"
+    )
 
     await query.answer()
 
@@ -153,14 +156,19 @@ async def check_channel_member_callback(update: Update, context: ContextTypes.DE
             await query.edit_message_text("Please use /start first.")
             return
         from services.access_control import ensure_channel_member
+
         r = await ensure_channel_member(update, context, db_user=db_user, purpose="purchase")
         if r.ok:
             db_user.channel_member = True
             await db.commit()
             from bot.keyboards import main_reply_keyboard
             from utils.i18n import t
+
             await query.edit_message_text(t("channel_membership_ok", db_user))
-            await query.message.reply_text(t("menu", db_user) + ":\n\n" + t("choose_option", db_user), reply_markup=main_reply_keyboard(db_user))
+            await query.message.reply_text(
+                t("menu", db_user) + ":\n\n" + t("choose_option", db_user),
+                reply_markup=main_reply_keyboard(db_user),
+            )
         else:
             # ensure_channel_member already prompted
             try:
@@ -168,7 +176,9 @@ async def check_channel_member_callback(update: Update, context: ContextTypes.DE
             except (TelegramError, NetworkError) as e:
                 logger.warning(f"Telegram error editing channel membership message: {e}")
             except Exception as e:
-                logger.error(f"Unexpected error editing channel membership message: {e}", exc_info=True)
+                logger.error(
+                    f"Unexpected error editing channel membership message: {e}", exc_info=True
+                )
 
 
 async def wallet_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -215,7 +225,9 @@ async def wallet_balance_callback(update: Update, context: ContextTypes.DEFAULT_
         )
 
 
-async def language_selection_callback(update: Update, context: ContextTypes.DEFAULT_TYPE, data: str) -> None:
+async def language_selection_callback(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, data: str
+) -> None:
     """Handle language selection callback: lang_fa, lang_en, lang_bilingual."""
     query = update.callback_query
     if not query:
@@ -229,6 +241,7 @@ async def language_selection_callback(update: Update, context: ContextTypes.DEFA
 
     async for db in get_db():
         from database.models import User
+
         db_user = await db.get(User, user.id)
         if not db_user:
             await query.edit_message_text("Please use /start first.")
@@ -262,6 +275,7 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
     async for db in get_db():
         from database.models import User
+
         db_user = await db.get(User, user.id)
         if not db_user:
             await query.edit_message_text("Please use /start first.")
@@ -297,13 +311,18 @@ async def purchase_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) 
             await db.commit()
             return
 
-        res = await db.execute(select(Product).where(Product.status == ProductStatus.ACTIVE).order_by(Product.sort_order.asc(), Product.id.asc()))
+        res = await db.execute(
+            select(Product)
+            .where(Product.status == ProductStatus.ACTIVE)
+            .order_by(Product.sort_order.asc(), Product.id.asc())
+        )
         products_all = list(res.scalars().all())
         products: list[Product] = []
         for p in products_all:
             panel = await db.get(Panel, p.panel_id)
             if panel and panel.is_available:
                 from config.features import is_enabled
+
                 if is_enabled("inventory") and not p.is_in_stock:
                     continue
                 products.append(p)
@@ -316,8 +335,7 @@ async def purchase_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 
         products_text = t("products_list", db_user)
         await query.edit_message_text(
-            products_text,
-            reply_markup=products_keyboard(products, db_user)
+            products_text, reply_markup=products_keyboard(products, db_user)
         )
 
 
@@ -340,7 +358,9 @@ async def my_services_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         from database.models import Service, ServiceStatus
 
         res = await db.execute(
-            select(Service).where(Service.user_id == db_user.id, Service.status == ServiceStatus.ACTIVE)
+            select(Service).where(
+                Service.user_id == db_user.id, Service.status == ServiceStatus.ACTIVE
+            )
         )
         services = list(res.scalars().all())
 
@@ -372,7 +392,11 @@ async def service_router(update: Update, context: ContextTypes.DEFAULT_TYPE, dat
     if action == "send" and len(parts) >= 3 and parts[2].isdigit():
         await service_send_config(update, context, int(parts[2]))
         return
-    if action in {"renew", "add", "reset", "rotate", "revoke"} and len(parts) >= 3 and parts[2].isdigit():
+    if (
+        action in {"renew", "add", "reset", "rotate", "revoke"}
+        and len(parts) >= 3
+        and parts[2].isdigit()
+    ):
         sid = int(parts[2])
         if action in {"renew", "add"}:
             await service_select_product_callback(update, context, sid, action)
@@ -380,7 +404,12 @@ async def service_router(update: Update, context: ContextTypes.DEFAULT_TYPE, dat
         if action in {"reset", "rotate", "revoke"}:
             await service_confirm_callback(update, context, sid, action)
             return
-    if action in {"reset", "rotate", "revoke"} and len(parts) >= 4 and parts[2] == "yes" and parts[3].isdigit():
+    if (
+        action in {"reset", "rotate", "revoke"}
+        and len(parts) >= 4
+        and parts[2] == "yes"
+        and parts[3].isdigit()
+    ):
         sid = int(parts[3])
         await service_execute_action(update, context, sid, action)
         return
@@ -392,7 +421,9 @@ async def service_router(update: Update, context: ContextTypes.DEFAULT_TYPE, dat
         return
 
 
-async def service_detail_callback(update: Update, context: ContextTypes.DEFAULT_TYPE, service_id: int) -> None:
+async def service_detail_callback(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, service_id: int
+) -> None:
     query = update.callback_query
     if not query:
         return
@@ -401,11 +432,13 @@ async def service_detail_callback(update: Update, context: ContextTypes.DEFAULT_
         return
     async for db in get_db():
         from database.models import Service
+
         svc = await db.get(Service, service_id)
         if not svc or svc.user_id != user.id:
             await query.edit_message_text("سرویس پیدا نشد.")
             return
         from bot.keyboards import service_manage_keyboard
+
         days = svc.days_remaining if svc.days_remaining is not None else "Unlimited"
         await query.edit_message_text(
             f"🔹 Service #{svc.id}\n"
@@ -417,7 +450,9 @@ async def service_detail_callback(update: Update, context: ContextTypes.DEFAULT_
         )
 
 
-async def service_send_config(update: Update, context: ContextTypes.DEFAULT_TYPE, service_id: int) -> None:
+async def service_send_config(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, service_id: int
+) -> None:
     query = update.callback_query
     if not query:
         return
@@ -427,6 +462,7 @@ async def service_send_config(update: Update, context: ContextTypes.DEFAULT_TYPE
     async for db in get_db():
         from database.models import Service, User
         from utils.i18n import get_user_language, t
+
         svc = await db.get(Service, service_id)
         if not svc or svc.user_id != user.id:
             await query.edit_message_text("سرویس پیدا نشد.")
@@ -443,6 +479,7 @@ async def service_send_config(update: Update, context: ContextTypes.DEFAULT_TYPE
 
         from services.subscription import ensure_service_sub_token, subscription_url_from_token
         from utils.qr import send_qr_code
+
         tok = await ensure_service_sub_token(db, svc)
         sub_url = subscription_url_from_token(tok)
         sub_txt = f"\n\n🔗 {t('subscription_link', db_user, lang)}:\n{sub_url}" if sub_url else ""
@@ -450,12 +487,16 @@ async def service_send_config(update: Update, context: ContextTypes.DEFAULT_TYPE
         await query.edit_message_text(config_text)
         # Send QR code for config
         try:
-            await send_qr_code(query.message, svc.config_link, caption=f"{t('qr_config', db_user, lang)} #{svc.id}")
+            await send_qr_code(
+                query.message, svc.config_link, caption=f"{t('qr_config', db_user, lang)} #{svc.id}"
+            )
         except Exception as e:
             logger.warning(f"Failed to send QR code: {e}")
 
 
-async def service_send_sub(update: Update, context: ContextTypes.DEFAULT_TYPE, service_id: int) -> None:
+async def service_send_sub(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, service_id: int
+) -> None:
     query = update.callback_query
     if not query:
         return
@@ -465,6 +506,7 @@ async def service_send_sub(update: Update, context: ContextTypes.DEFAULT_TYPE, s
     async for db in get_db():
         from database.models import Service
         from services.subscription import ensure_service_sub_token, subscription_url_from_token
+
         svc = await db.get(Service, service_id)
         if not svc or svc.user_id != user.id:
             await query.edit_message_text("سرویس پیدا نشد.")
@@ -480,19 +522,26 @@ async def service_send_sub(update: Update, context: ContextTypes.DEFAULT_TYPE, s
         if not url:
             await query.edit_message_text(t("subscription_url_not_configured", db_user, lang))
             return
-        await query.edit_message_text(f"🔗 {t('subscription_link', db_user, lang)} {t('service', db_user, lang)} #{svc.id}:\n\n{url}")
+        await query.edit_message_text(
+            f"🔗 {t('subscription_link', db_user, lang)} {t('service', db_user, lang)} #{svc.id}:\n\n{url}"
+        )
         # Send QR code for subscription
         try:
-            await send_qr_code(query.message, url, caption=f"{t('qr_subscription', db_user, lang)} #{svc.id}")
+            await send_qr_code(
+                query.message, url, caption=f"{t('qr_subscription', db_user, lang)} #{svc.id}"
+            )
         except Exception as e:
             logger.warning(f"Failed to send QR code: {e}")
 
 
-async def service_confirm_callback(update: Update, context: ContextTypes.DEFAULT_TYPE, service_id: int, action: str) -> None:
+async def service_confirm_callback(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, service_id: int, action: str
+) -> None:
     query = update.callback_query
     if not query:
         return
     from bot.keyboards import confirm_action_keyboard
+
     txt = "آیا مطمئن هستید؟"
     if action == "reset":
         txt = "ریست ترافیک انجام شود؟"
@@ -503,7 +552,9 @@ async def service_confirm_callback(update: Update, context: ContextTypes.DEFAULT
     await query.edit_message_text(txt, reply_markup=confirm_action_keyboard(action, service_id))
 
 
-async def service_execute_action(update: Update, context: ContextTypes.DEFAULT_TYPE, service_id: int, action: str) -> None:
+async def service_execute_action(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, service_id: int, action: str
+) -> None:
     query = update.callback_query
     if not query:
         return
@@ -516,6 +567,7 @@ async def service_execute_action(update: Update, context: ContextTypes.DEFAULT_T
     try:
         async for db in get_db():
             from database.models import Service
+
             svc = await db.get(Service, service_id)
             if not svc or svc.user_id != user.id:
                 await query.edit_message_text("سرویس پیدا نشد.")
@@ -537,11 +589,19 @@ async def service_execute_action(update: Update, context: ContextTypes.DEFAULT_T
                 url = subscription_url_from_token(str(svc.sub_token))
                 lang = get_user_language(db_user)
                 if not url:
-                    await query.edit_message_text(t("subscription_url_not_configured", db_user, lang))
+                    await query.edit_message_text(
+                        t("subscription_url_not_configured", db_user, lang)
+                    )
                     return
-                await query.edit_message_text(f"✅ {t('revoke_sub', db_user, lang)}\n\n🔗 {t('subscription_link', db_user, lang)}:\n{url}")
+                await query.edit_message_text(
+                    f"✅ {t('revoke_sub', db_user, lang)}\n\n🔗 {t('subscription_link', db_user, lang)}:\n{url}"
+                )
                 try:
-                    await send_qr_code(query.message, url, caption=f"{t('qr_subscription', db_user, lang)} #{svc.id}")
+                    await send_qr_code(
+                        query.message,
+                        url,
+                        caption=f"{t('qr_subscription', db_user, lang)} #{svc.id}",
+                    )
                 except (TelegramError, NetworkError) as e:
                     logger.warning(f"Telegram error sending QR code: {e}")
                 except Exception as e:
@@ -573,7 +633,9 @@ async def service_execute_action(update: Update, context: ContextTypes.DEFAULT_T
                         data_limit_bytes = user_stats.data_limit_bytes
 
                         # Rotate credentials (this creates new UUID)
-                        await panel_service.rotate_credentials(username=svc.client_email, protocol=svc.protocol)
+                        await panel_service.rotate_credentials(
+                            username=svc.client_email, protocol=svc.protocol
+                        )
 
                         # Generate new config link
                         new_link = await panel_service.generate_config_link(
@@ -588,12 +650,18 @@ async def service_execute_action(update: Update, context: ContextTypes.DEFAULT_T
                             # Note: Some panels may not support this operation
                             try:
                                 # Try to update limit (may not be supported by all panels)
-                                await panel_service.add_traffic(username=svc.client_email, add_bytes=-used_bytes)
+                                await panel_service.add_traffic(
+                                    username=svc.client_email, add_bytes=-used_bytes
+                                )
                             except (PanelError, PanelConnectionError) as e:
-                                logger.warning(f"Panel error updating traffic limit (operation may not be supported): {e}")
+                                logger.warning(
+                                    f"Panel error updating traffic limit (operation may not be supported): {e}"
+                                )
                                 # If not supported, just reset traffic
                             except Exception as e:
-                                logger.error(f"Unexpected error updating traffic limit: {e}", exc_info=True)
+                                logger.error(
+                                    f"Unexpected error updating traffic limit: {e}", exc_info=True
+                                )
                                 # If not supported, just reset traffic
                             # Reset used_traffic to 0 after subtracting from limit
                             await panel_service.reset_traffic(username=svc.client_email)
@@ -620,7 +688,9 @@ async def service_execute_action(update: Update, context: ContextTypes.DEFAULT_T
         await release_lock(user.id)
 
 
-async def service_select_product_callback(update: Update, context: ContextTypes.DEFAULT_TYPE, service_id: int, action: str) -> None:
+async def service_select_product_callback(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, service_id: int, action: str
+) -> None:
     query = update.callback_query
     if not query:
         return
@@ -629,11 +699,14 @@ async def service_select_product_callback(update: Update, context: ContextTypes.
         return
     async for db in get_db():
         from database.models import Product, ProductStatus, Service
+
         svc = await db.get(Service, service_id)
         if not svc or svc.user_id != user.id:
             await query.edit_message_text("سرویس پیدا نشد.")
             return
-        q = select(Product).where(Product.status == ProductStatus.ACTIVE, Product.protocol == svc.protocol)
+        q = select(Product).where(
+            Product.status == ProductStatus.ACTIVE, Product.protocol == svc.protocol
+        )
         if action == "renew":
             q = q.where(Product.duration_days > 0)
         if action == "add":
@@ -644,8 +717,11 @@ async def service_select_product_callback(update: Update, context: ContextTypes.
             await query.edit_message_text("محصولی برای این عملیات پیدا نشد.")
             return
         from bot.keyboards import service_products_keyboard
+
         title = "🧾 انتخاب پکیج تمدید" if action == "renew" else "📈 انتخاب پکیج حجم"
-        await query.edit_message_text(title, reply_markup=service_products_keyboard(action, service_id, products))
+        await query.edit_message_text(
+            title, reply_markup=service_products_keyboard(action, service_id, products)
+        )
 
 
 async def service_apply_product_callback(
@@ -697,7 +773,9 @@ async def service_apply_product_callback(
         db.add(purchase)
         await db.commit()
         await db.refresh(purchase)
-        await set_step(user.id, step="purchase.awaiting_payment", payload={"purchase_id": purchase.id})
+        await set_step(
+            user.id, step="purchase.awaiting_payment", payload={"purchase_id": purchase.id}
+        )
         await query.edit_message_text(
             f"🧾 سفارش ساخته شد.\n\nOrder ID: {purchase.id}\nAmount: {int(purchase.final_amount):,} Toman\n\nروش پرداخت را انتخاب کنید:",
             reply_markup=payment_gateway_keyboard(str(purchase.id)),
@@ -711,7 +789,9 @@ async def trial_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     if not query or not user:
         return
     if not await try_lock(user.id, seconds=30, reason="trial.create"):
-        await query.edit_message_text("⏳ درخواست قبلی هنوز در حال پردازش است. چند ثانیه دیگر دوباره تلاش کنید.")
+        await query.edit_message_text(
+            "⏳ درخواست قبلی هنوز در حال پردازش است. چند ثانیه دیگر دوباره تلاش کنید."
+        )
         return
     try:
         async for db in get_db():
@@ -720,6 +800,7 @@ async def trial_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 await query.edit_message_text("Please use /start first.")
                 return
             from services.access_control import ensure_access
+
             guard = await ensure_access(update, context, db_user=db_user, purpose="trial")
             if not guard.ok:
                 await db.commit()
@@ -739,7 +820,9 @@ async def trial_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                     return
                 raise
             await query.edit_message_text(
-                t("trial_created", db_user, lang).format(days=trial.duration_days, gb=trial.traffic_gb, service_id=svc.id)
+                t("trial_created", db_user, lang).format(
+                    days=trial.duration_days, gb=trial.traffic_gb, service_id=svc.id
+                )
             )
             await query.message.reply_text(f"🔗 {t('config', db_user, lang)}:\n{trial.config_link}")
     finally:
@@ -800,7 +883,10 @@ async def product_callback(
             f"{t('purchase_confirmation', db_user, lang)}"
         )
 
-        await query.edit_message_text(product_text_i18n, reply_markup=product_detail_keyboard(product_id, db_user))
+        await query.edit_message_text(
+            product_text_i18n, reply_markup=product_detail_keyboard(product_id, db_user)
+        )
+
 
 async def discount_enter_callback(
     update: Update,
@@ -851,7 +937,9 @@ async def confirm_purchase_callback(
         return
 
     if not await try_lock(user.id, seconds=30, reason=f"purchase.confirm.{product_id}"):
-        await query.edit_message_text("⏳ درخواست قبلی هنوز در حال پردازش است. چند ثانیه دیگر دوباره تلاش کنید.")
+        await query.edit_message_text(
+            "⏳ درخواست قبلی هنوز در حال پردازش است. چند ثانیه دیگر دوباره تلاش کنید."
+        )
         return
     try:
         async for db in get_db():
@@ -860,6 +948,7 @@ async def confirm_purchase_callback(
                 await query.edit_message_text("Please use /start first.")
                 return
             from services.access_control import ensure_access
+
             guard = await ensure_access(update, context, db_user=db_user, purpose="purchase")
             if not guard.ok:
                 await db.commit()
@@ -894,7 +983,11 @@ async def confirm_purchase_callback(
                 discount_code_obj = None
                 discount_amount = 0
                 if discount_code:
-                    discount_code_obj, discount_amount, error_msg = await validate_and_apply_discount(
+                    (
+                        discount_code_obj,
+                        discount_amount,
+                        error_msg,
+                    ) = await validate_and_apply_discount(
                         db,
                         code=discount_code,
                         user_id=db_user.id,
@@ -903,9 +996,16 @@ async def confirm_purchase_callback(
                     )
                     if not discount_code_obj:
                         from utils.i18n import get_user_language, t
+
                         lang = get_user_language(db_user)
-                        await set_step(user.id, step="purchase.entering_discount", payload={"product_id": product_id})
-                        await query.edit_message_text(f"{t('discount_error', db_user, lang)}: {error_msg}\n\n{t('enter_code_prompt', db_user, lang)}")
+                        await set_step(
+                            user.id,
+                            step="purchase.entering_discount",
+                            payload={"product_id": product_id},
+                        )
+                        await query.edit_message_text(
+                            f"{t('discount_error', db_user, lang)}: {error_msg}\n\n{t('enter_code_prompt', db_user, lang)}"
+                        )
                         return
 
                 final_amount = int(product.price) - int(discount_amount)
@@ -914,12 +1014,15 @@ async def confirm_purchase_callback(
 
                 # Inventory reservation (prevents oversell)
                 from config.features import is_enabled
+
                 if is_enabled("inventory") and product.stock_quantity is not None:
                     from services.inventory import InventoryError, reserve_stock
+
                     try:
                         await reserve_stock(db, product_id=product.id, qty=1)
                     except InventoryError:
                         from utils.i18n import get_user_language, t
+
                         lang = get_user_language(db_user)
                         await query.edit_message_text(t("no_products_available", db_user, lang))
                         return
@@ -951,7 +1054,11 @@ async def confirm_purchase_callback(
                     f"🧾 سفارش ساخته شد.\n\n"
                     f"Order ID: {purchase.id}\n"
                     f"Amount: {int(product.price):,} Toman\n"
-                    + (f"Discount: -{int(discount_amount):,} Toman\n" if int(discount_amount) > 0 else "")
+                    + (
+                        f"Discount: -{int(discount_amount):,} Toman\n"
+                        if int(discount_amount) > 0
+                        else ""
+                    )
                     + f"Final: {int(final_amount):,} Toman\n\n"
                     "روش پرداخت را انتخاب کنید:",
                     reply_markup=payment_gateway_keyboard(str(purchase.id)),
@@ -965,7 +1072,9 @@ async def confirm_purchase_callback(
             from utils.panel_username import make_panel_username
 
             # Use same username format as new mode for consistency
-            username = make_panel_username(telegram_username=db_user.username, user_id=db_user.id, suffix=str(product.id))
+            username = make_panel_username(
+                telegram_username=db_user.username, user_id=db_user.id, suffix=str(product.id)
+            )
             await query.edit_message_text("⏳ Provisioning your service... please wait.")
             cfg = await create_service_config(
                 user_email=username,
@@ -1070,7 +1179,10 @@ async def tutorial_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 
         lang = get_user_language(db_user)
         fa = await get_setting(db, "tutorial_fa") or "📚 آموزش\n\n(توسط ادمین قابل تنظیم است)"
-        en = await get_setting(db, "tutorial_en") or "📚 Tutorial\n\n(Admin can customize this content)"
+        en = (
+            await get_setting(db, "tutorial_en")
+            or "📚 Tutorial\n\n(Admin can customize this content)"
+        )
         if lang == Language.BILINGUAL:
             body = f"{fa}\n\n---\n\n{en}"
         elif lang == Language.ENGLISH:
@@ -1112,7 +1224,9 @@ async def affiliate_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
             )
         )
         earned = int(res.scalar() or 0)
-        link = build_referral_link(bot_username=settings.bot_username, referral_code=str(db_user.referral_code))
+        link = build_referral_link(
+            bot_username=settings.bot_username, referral_code=str(db_user.referral_code)
+        )
         txt = (
             "👥 زیرمجموعه‌گیری\n\n"
             f"🔗 لینک دعوت شما:\n{link}\n\n"
@@ -1142,17 +1256,25 @@ async def my_tickets_callback(update: Update, context: ContextTypes.DEFAULT_TYPE
         return
     async for db in get_db():
         from database.models import SupportTicket
+
         res = await db.execute(select(User).where(User.id == user.id))
         db_user = res.scalars().first()
         if not db_user:
             await query.edit_message_text("Please use /start first.")
             return
-        res = await db.execute(select(SupportTicket).where(SupportTicket.user_id == db_user.id).order_by(SupportTicket.id.desc()).limit(10))
+        res = await db.execute(
+            select(SupportTicket)
+            .where(SupportTicket.user_id == db_user.id)
+            .order_by(SupportTicket.id.desc())
+            .limit(10)
+        )
         tickets = list(res.scalars().all())
         if not tickets:
             await query.edit_message_text("You have no tickets.")
             return
-        txt = "📋 Your tickets:\n\n" + "\n".join([f"#{t.ticket_number} - {t.status}" for t in tickets])
+        txt = "📋 Your tickets:\n\n" + "\n".join(
+            [f"#{t.ticket_number} - {t.status}" for t in tickets]
+        )
         await query.edit_message_text(txt)
 
 
@@ -1196,10 +1318,14 @@ async def payment_callback(
             card_no = await get_setting(db, "card_to_card_number") or settings.card_to_card_number
             card_owner = await get_setting(db, "card_to_card_owner") or settings.card_to_card_owner
             if not card_no or card_no.strip().upper() in {"SET_ME", "CHANGEME"}:
-                await query.edit_message_text("کارت‌به‌کارت تنظیم نشده. لطفاً با ادمین تماس بگیرید یا درگاه دیگری انتخاب کنید.")
+                await query.edit_message_text(
+                    "کارت‌به‌کارت تنظیم نشده. لطفاً با ادمین تماس بگیرید یا درگاه دیگری انتخاب کنید."
+                )
                 return
             c2c = CardToCardGateway()
-            d = await c2c.create_payment(amount=int(purchase.final_amount), order_id=str(purchase.id), callback_url=None)
+            d = await c2c.create_payment(
+                amount=int(purchase.final_amount), order_id=str(purchase.id), callback_url=None
+            )
             pay = Payment(
                 purchase_id=purchase.id,
                 gateway=PaymentGateway.CARD_TO_CARD,
@@ -1235,7 +1361,9 @@ async def payment_callback(
         if gw == "nowpayments":
             np_key = await get_setting(db, "nowpayments_api_key") or settings.nowpayments_api_key
             if not np_key or not settings.public_base_url:
-                await query.edit_message_text("NowPayments تنظیم نشده. لطفاً Card-to-Card را انتخاب کنید.")
+                await query.edit_message_text(
+                    "NowPayments تنظیم نشده. لطفاً Card-to-Card را انتخاب کنید."
+                )
                 return
             np = NowPaymentsGateway(api_key=np_key)
             cb = f"{settings.public_base_url.rstrip('/')}/api/payments/webhook/nowpayments"
@@ -1265,7 +1393,9 @@ async def payment_callback(
         if gw == "aqayepardakht":
             pin = await get_setting(db, "aqayepardakht_pin") or settings.aqayepardakht_api_key
             if not pin or not settings.public_base_url:
-                await query.edit_message_text("Aqayepardakht تنظیم نشده. لطفاً Card-to-Card را انتخاب کنید.")
+                await query.edit_message_text(
+                    "Aqayepardakht تنظیم نشده. لطفاً Card-to-Card را انتخاب کنید."
+                )
                 return
             ag = AqayepardakhtGateway(pin=pin)
             cb = f"{settings.public_base_url.rstrip('/')}/api/payments/webhook/aqayepardakht"
@@ -1281,7 +1411,9 @@ async def payment_callback(
                 status=PaymentStatus.PROCESSING,
                 amount=int(purchase.final_amount),
                 currency="IRR",
-                gateway_transaction_id=str(res.get("transid") or res.get("transaction_id") or res.get("id") or ""),
+                gateway_transaction_id=str(
+                    res.get("transid") or res.get("transaction_id") or res.get("id") or ""
+                ),
                 gateway_response=str(res),
             )
             db.add(pay)
@@ -1340,12 +1472,17 @@ async def wallet_topup_callback(update: Update, context: ContextTypes.DEFAULT_TY
         lang = get_user_language(db_user)
         await set_step(user.id, step="wallet.entering_topup_amount", payload={})
         await query.edit_message_text(
-            t("wallet_topup_amount_prompt", db_user, lang) + "\n\n" + t("wallet_balance", db_user, lang) + f": {int(db_user.balance):,} Toman"
+            t("wallet_topup_amount_prompt", db_user, lang)
+            + "\n\n"
+            + t("wallet_balance", db_user, lang)
+            + f": {int(db_user.balance):,} Toman"
         )
         await query.answer()
 
 
-async def cancel_order_callback(update: Update, context: ContextTypes.DEFAULT_TYPE, order_id: int) -> None:
+async def cancel_order_callback(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, order_id: int
+) -> None:
     query = update.callback_query
     if not query:
         return
@@ -1363,8 +1500,10 @@ async def cancel_order_callback(update: Update, context: ContextTypes.DEFAULT_TY
         purchase.status = PurchaseStatus.CANCELLED
         if purchase.product_id:
             from config.features import is_enabled
+
             if is_enabled("inventory"):
                 from services.inventory import release_stock
+
                 await release_stock(db, product_id=int(purchase.product_id), qty=1)
         await db.commit()
         await query.edit_message_text("❌ سفارش کنسل شد.")
@@ -1405,33 +1544,41 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE, data:
     # Panels
     elif data == "admin_panels":
         from handlers.admin_panels import admin_panels_list_callback
+
         await admin_panels_list_callback(update, context, page=0)
     elif data.startswith("admin_panels_page_"):
         page = int(data.split("_")[-1])
         from handlers.admin_panels import admin_panels_list_callback
+
         await admin_panels_list_callback(update, context, page=page)
     elif data.startswith("admin_panel_detail_"):
         panel_id = int(data.split("_")[-1])
         from handlers.admin_panels import admin_panel_detail_callback
+
         await admin_panel_detail_callback(update, context, panel_id)
     elif data.startswith("admin_panel_test_"):
         panel_id = int(data.split("_")[-1])
         from handlers.admin_panels import admin_panel_test_connection_callback
+
         await admin_panel_test_connection_callback(update, context, panel_id)
     elif data.startswith("admin_panel_stats_"):
         panel_id = int(data.split("_")[-1])
         from handlers.admin_panels import admin_panel_stats_callback
+
         await admin_panel_stats_callback(update, context, panel_id)
     elif data == "admin_panel_add":
         from handlers.admin_panels import admin_panel_add_callback
+
         await admin_panel_add_callback(update, context)
     elif data.startswith("admin_panel_delete_"):
         panel_id = int(data.split("_")[-1])
         from handlers.admin_panels import admin_panel_delete_callback
+
         await admin_panel_delete_callback(update, context, panel_id)
     # Stats
     elif data == "admin_stats":
         from handlers.admin_stats import admin_stats_callback
+
         await admin_stats_callback(update, context)
     # Users
     elif data == "admin_users":
@@ -1444,6 +1591,7 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE, data:
         from handlers.admin_callbacks_complete import (
             admin_user_detail_callback as admin_user_detail,
         )
+
         await admin_user_detail(update, context, user_id)
     # Services
     elif data == "admin_services":
@@ -1456,95 +1604,116 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE, data:
         from handlers.admin_callbacks_complete import (
             admin_service_detail_callback as admin_service_detail,
         )
+
         await admin_service_detail(update, context, service_id)
     elif data.startswith("admin_service_sync_"):
         service_id = int(data.split("_")[-1])
         from handlers.admin_callbacks_complete import (
             admin_service_sync_callback as admin_service_sync,
         )
+
         await admin_service_sync(update, context, service_id)
     elif data.startswith("admin_service_renew_"):
         service_id = int(data.split("_")[-1])
         from handlers.admin_callbacks_complete import (
             admin_service_renew_callback as admin_service_renew,
         )
+
         await admin_service_renew(update, context, service_id)
     elif data.startswith("admin_service_addgb_"):
         service_id = int(data.split("_")[-1])
         from handlers.admin_callbacks_complete import (
             admin_service_addgb_callback as admin_service_addgb,
         )
+
         await admin_service_addgb(update, context, service_id)
     elif data.startswith("admin_service_rotate_"):
         service_id = int(data.split("_")[-1])
         from handlers.admin_callbacks_complete import (
             admin_service_rotate_callback as admin_service_rotate,
         )
+
         await admin_service_rotate(update, context, service_id)
     elif data.startswith("admin_service_remove_"):
         service_id = int(data.split("_")[-1])
         from handlers.admin_callbacks_complete import (
             admin_service_remove_callback as admin_service_remove,
         )
+
         await admin_service_remove(update, context, service_id)
     # Products
     elif data == "admin_products":
         from handlers.admin_callbacks_complete import admin_products_callback as admin_products
+
         await admin_products(update, context)
     # Tickets
     elif data == "admin_tickets":
         from handlers.admin_callbacks_complete import admin_tickets_callback as admin_tickets
+
         await admin_tickets(update, context)
     # Panels
     elif data == "admin_panels":
         from handlers.admin_panels import admin_panels_list_callback
+
         await admin_panels_list_callback(update, context, page=0)
     elif data.startswith("admin_panels_page_"):
         page = int(data.split("_")[-1])
         from handlers.admin_panels import admin_panels_list_callback
+
         await admin_panels_list_callback(update, context, page=page)
     elif data.startswith("admin_panel_detail_"):
         panel_id = int(data.split("_")[-1])
         from handlers.admin_panels import admin_panel_detail_callback
+
         await admin_panel_detail_callback(update, context, panel_id)
     elif data.startswith("admin_panel_test_"):
         panel_id = int(data.split("_")[-1])
         from handlers.admin_panels import admin_panel_test_connection_callback
+
         await admin_panel_test_connection_callback(update, context, panel_id)
     elif data.startswith("admin_panel_stats_"):
         panel_id = int(data.split("_")[-1])
         from handlers.admin_panels import admin_panel_stats_callback
+
         await admin_panel_stats_callback(update, context, panel_id)
     elif data == "admin_panel_add":
         from handlers.admin_panels import admin_panel_add_callback
+
         await admin_panel_add_callback(update, context)
     elif data.startswith("admin_panel_delete_"):
         panel_id = int(data.split("_")[-1])
         from handlers.admin_panels import admin_panel_delete_callback
+
         await admin_panel_delete_callback(update, context, panel_id)
     # Stats
     elif data == "admin_stats":
         from handlers.admin_stats import admin_stats_callback
+
         await admin_stats_callback(update, context)
     # Settings
     elif data == "admin_settings":
         await admin_settings_callback(update, context)
     elif data == "admin_set_card":
         from handlers.admin_callbacks_complete import admin_set_card_callback as admin_set_card
+
         await admin_set_card(update, context)
     elif data == "admin_set_nowpay":
         from handlers.admin_callbacks_complete import admin_set_nowpay_callback as admin_set_nowpay
+
         await admin_set_nowpay(update, context)
     elif data == "admin_set_aqaye":
         from handlers.admin_callbacks_complete import admin_set_aqaye_callback as admin_set_aqaye
+
         await admin_set_aqaye(update, context)
     elif data == "admin_set_faq":
         from handlers.admin_callbacks_complete import admin_set_faq_callback as admin_set_faq
+
         await admin_set_faq(update, context)
     elif data == "admin_set_tutorial":
         from handlers.admin_callbacks_complete import (
             admin_set_tutorial_callback as admin_set_tutorial,
         )
+
         await admin_set_tutorial(update, context)
     else:
         await update.callback_query.answer("Unknown admin action.", show_alert=True)
@@ -1555,4 +1724,3 @@ def register_callback_handlers(application: Application) -> None:
     from telegram.ext import CallbackQueryHandler
 
     application.add_handler(CallbackQueryHandler(callback_handler))
-

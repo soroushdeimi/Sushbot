@@ -28,4 +28,3 @@ JOB_DEFAULTS: dict[str, int] = {
     "admin_daily_report": 86400,  # 24 hours
     "payment_reconcile": settings.payment_reconcile_interval_seconds,
 }
-

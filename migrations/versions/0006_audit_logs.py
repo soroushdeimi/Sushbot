@@ -27,7 +27,9 @@ def upgrade() -> None:
         );
         """
     )
-    op.execute("CREATE INDEX IF NOT EXISTS ix_audit_logs_actor_user_id ON audit_logs(actor_user_id);")
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_audit_logs_actor_user_id ON audit_logs(actor_user_id);"
+    )
     op.execute("CREATE INDEX IF NOT EXISTS ix_audit_logs_action ON audit_logs(action);")
     op.execute("CREATE INDEX IF NOT EXISTS ix_audit_logs_entity_type ON audit_logs(entity_type);")
     op.execute("CREATE INDEX IF NOT EXISTS ix_audit_logs_entity_id ON audit_logs(entity_id);")
@@ -36,6 +38,3 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     op.execute("DROP TABLE IF EXISTS audit_logs CASCADE;")
-
-
-

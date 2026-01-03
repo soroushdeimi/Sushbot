@@ -131,7 +131,9 @@ async def test_check_admin_status_user_not_found():
 
         # Also patch check_env_admin to return False so it falls through to DB check
         with patch("utils.security.check_env_admin") as mock_env:
-            mock_env.return_value = AdminCheckResult(is_admin=False, reason="not_in_env_admins", source="env")
+            mock_env.return_value = AdminCheckResult(
+                is_admin=False, reason="not_in_env_admins", source="env"
+            )
 
             result = await check_admin_status(99999, check_env_first=False)
 
@@ -249,9 +251,7 @@ async def test_admin_required_rejects_regular_user(mock_update, mock_context):
         return "success"
 
     with patch("utils.security.check_admin_status") as mock_check:
-        mock_check.return_value = AdminCheckResult(
-            is_admin=False, reason="not_admin"
-        )
+        mock_check.return_value = AdminCheckResult(is_admin=False, reason="not_admin")
 
         result = await protected_handler(mock_update, mock_context)
 
@@ -268,9 +268,7 @@ async def test_admin_required_accepts_admin(mock_update, mock_context):
         return "success"
 
     with patch("utils.security.check_admin_status") as mock_check:
-        mock_check.return_value = AdminCheckResult(
-            is_admin=True, level="admin", permissions=set()
-        )
+        mock_check.return_value = AdminCheckResult(is_admin=True, level="admin", permissions=set())
 
         result = await protected_handler(mock_update, mock_context)
 
@@ -286,9 +284,7 @@ async def test_admin_required_non_silent_sends_message(mock_update, mock_context
         return "success"
 
     with patch("utils.security.check_admin_status") as mock_check:
-        mock_check.return_value = AdminCheckResult(
-            is_admin=False, reason="not_admin"
-        )
+        mock_check.return_value = AdminCheckResult(is_admin=False, reason="not_admin")
 
         result = await protected_handler(mock_update, mock_context)
 
@@ -305,9 +301,7 @@ async def test_admin_required_callback_query_denial(mock_callback_update, mock_c
         return "success"
 
     with patch("utils.security.check_admin_status") as mock_check:
-        mock_check.return_value = AdminCheckResult(
-            is_admin=False, reason="not_admin"
-        )
+        mock_check.return_value = AdminCheckResult(is_admin=False, reason="not_admin")
 
         result = await protected_handler(mock_callback_update, mock_context)
 
@@ -368,9 +362,7 @@ async def test_admin_required_multiple_levels(mock_update, mock_context):
 
     with patch("utils.security.check_admin_status") as mock_check:
         # Test with admin level
-        mock_check.return_value = AdminCheckResult(
-            is_admin=True, level="admin", permissions=set()
-        )
+        mock_check.return_value = AdminCheckResult(is_admin=True, level="admin", permissions=set())
         result = await protected_handler(mock_update, mock_context)
         assert result == "success"
 
@@ -433,7 +425,9 @@ async def test_super_admin_bypasses_permission_check(mock_update, mock_context):
 
     with patch("utils.security.check_admin_status") as mock_check:
         mock_check.return_value = AdminCheckResult(
-            is_admin=True, level="super_admin", permissions=set()  # No explicit permissions
+            is_admin=True,
+            level="super_admin",
+            permissions=set(),  # No explicit permissions
         )
 
         result = await protected_handler(mock_update, mock_context)
@@ -456,9 +450,7 @@ async def test_super_admin_required_decorator(mock_update, mock_context):
 
     with patch("utils.security.check_admin_status") as mock_check:
         # Should reject regular admin
-        mock_check.return_value = AdminCheckResult(
-            is_admin=True, level="admin", permissions=set()
-        )
+        mock_check.return_value = AdminCheckResult(is_admin=True, level="admin", permissions=set())
         result = await protected_handler(mock_update, mock_context)
         assert result is None
 
@@ -544,9 +536,7 @@ async def test_admin_required_database_error(mock_update, mock_context):
         return "success"
 
     with patch("utils.security.check_admin_status") as mock_check:
-        mock_check.return_value = AdminCheckResult(
-            is_admin=False, reason="database_error"
-        )
+        mock_check.return_value = AdminCheckResult(is_admin=False, reason="database_error")
 
         result = await protected_handler(mock_update, mock_context)
 

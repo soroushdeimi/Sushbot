@@ -167,8 +167,15 @@ async def aqayepardakht_webhook(request: Request) -> HTMLResponse:
     if not invoice_id or not transid:
         try:
             payload = await request.json()
-            invoice_id = invoice_id or str(payload.get("invoice_id") or payload.get("order_id") or "")
-            transid = transid or str(payload.get("transid") or payload.get("trans_id") or payload.get("transaction_id") or "")
+            invoice_id = invoice_id or str(
+                payload.get("invoice_id") or payload.get("order_id") or ""
+            )
+            transid = transid or str(
+                payload.get("transid")
+                or payload.get("trans_id")
+                or payload.get("transaction_id")
+                or ""
+            )
         except Exception:
             pass
 
@@ -257,4 +264,3 @@ async def aqayepardakht_webhook(request: Request) -> HTMLResponse:
         f"<p><a href='https://t.me/{settings.bot_username}'>Back to bot</a></p>"
     )
     return HTMLResponse(body)
-

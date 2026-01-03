@@ -1,4 +1,3 @@
-
 import pytest
 
 
@@ -39,5 +38,3 @@ async def test_aqayepardakht_create_payment_builds_startpay_url(monkeypatch):
     res = await gw.create_payment(amount=10000, order_id="42", callback_url="https://cb.example/x")
     assert res["transid"] == "T123"
     assert res["payment_url"].endswith("/startpay/T123")
-
-

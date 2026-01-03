@@ -56,6 +56,3 @@ async def audit(
         )
     )
     await db.commit()
-
-
-

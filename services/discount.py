@@ -142,5 +142,3 @@ async def apply_gift_code_to_wallet(
     except Exception as e:
         await db.rollback()
         return False, f"Failed to apply gift code: {str(e)}", 0
-
-

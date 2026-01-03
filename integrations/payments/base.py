@@ -38,4 +38,3 @@ class PaymentGatewayBase(ABC):
     ) -> dict[str, Any]:
         """Check payment status."""
         pass
-

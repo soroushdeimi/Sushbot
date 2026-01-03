@@ -70,7 +70,12 @@ async def list_panels(
 ) -> list[PanelOut]:
     res = await db.execute(select(Panel).order_by(Panel.id.desc()).limit(limit).offset(offset))
     items = list(res.scalars().all())
-    await audit(db, actor_user_id=cur.user.id, action="api.panels.list", meta={"limit": limit, "offset": offset})
+    await audit(
+        db,
+        actor_user_id=cur.user.id,
+        action="api.panels.list",
+        meta={"limit": limit, "offset": offset},
+    )
     return [
         PanelOut(
             id=int(p.id),
@@ -79,7 +84,9 @@ async def list_panels(
             node_id=int(p.node_id),
             status=str(p.status.value if hasattr(p.status, "value") else p.status),
             is_test_panel=bool(p.is_test_panel),
-            max_configs_per_panel=int(p.max_configs_per_panel) if p.max_configs_per_panel is not None else None,
+            max_configs_per_panel=int(p.max_configs_per_panel)
+            if p.max_configs_per_panel is not None
+            else None,
             current_config_count=int(p.current_config_count),
             location=p.location,
             country_code=p.country_code,
@@ -108,7 +115,9 @@ async def create_panel(
         node_id=int(p.node_id),
         status=str(p.status.value if hasattr(p.status, "value") else p.status),
         is_test_panel=bool(p.is_test_panel),
-        max_configs_per_panel=int(p.max_configs_per_panel) if p.max_configs_per_panel is not None else None,
+        max_configs_per_panel=int(p.max_configs_per_panel)
+        if p.max_configs_per_panel is not None
+        else None,
         current_config_count=int(p.current_config_count),
         location=p.location,
         country_code=p.country_code,
@@ -132,7 +141,12 @@ async def update_panel(
         setattr(p, k, v)
     await db.commit()
     await db.refresh(p)
-    await audit(db, actor_user_id=cur.user.id, action="api.panels.update", meta={"id": int(p.id), "fields": list(data.keys())})
+    await audit(
+        db,
+        actor_user_id=cur.user.id,
+        action="api.panels.update",
+        meta={"id": int(p.id), "fields": list(data.keys())},
+    )
     return PanelOut(
         id=int(p.id),
         name=p.name,
@@ -140,7 +154,9 @@ async def update_panel(
         node_id=int(p.node_id),
         status=str(p.status.value if hasattr(p.status, "value") else p.status),
         is_test_panel=bool(p.is_test_panel),
-        max_configs_per_panel=int(p.max_configs_per_panel) if p.max_configs_per_panel is not None else None,
+        max_configs_per_panel=int(p.max_configs_per_panel)
+        if p.max_configs_per_panel is not None
+        else None,
         current_config_count=int(p.current_config_count),
         location=p.location,
         country_code=p.country_code,
@@ -167,5 +183,3 @@ async def sync_config_count(
         return {"panel_id": panel_id, "config_count": count, "status": "synced"}
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
-
-

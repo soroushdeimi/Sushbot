@@ -6,6 +6,7 @@ import io
 
 try:
     import qrcode
+
     QR_AVAILABLE = True
 except ImportError:
     QR_AVAILABLE = False
@@ -48,7 +49,11 @@ async def send_qr_code(update_or_message, qr_data: str, caption: str | None = No
     qr_buf = generate_qr_image(qr_data)
     if not qr_buf:
         # Fallback: send text if QR library not available
-        reply_method = update_or_message.reply_text if hasattr(update_or_message, "reply_text") else update_or_message.message.reply_text
+        reply_method = (
+            update_or_message.reply_text
+            if hasattr(update_or_message, "reply_text")
+            else update_or_message.message.reply_text
+        )
         await reply_method(f"📱 QR Code data:\n\n`{qr_data}`", parse_mode="Markdown")
         return
 
@@ -61,8 +66,8 @@ async def send_qr_code(update_or_message, qr_data: str, caption: str | None = No
         await update_or_message.reply_photo(qr_file, caption=caption)
     else:
         # Fallback
-        reply_method = update_or_message.reply_text if hasattr(update_or_message, "reply_text") else None
+        reply_method = (
+            update_or_message.reply_text if hasattr(update_or_message, "reply_text") else None
+        )
         if reply_method:
             await reply_method(f"📱 QR Code:\n\n`{qr_data}`", parse_mode="Markdown")
-
-

@@ -41,19 +41,31 @@ class Service(Base, TimestampMixin, SoftDeleteMixin):
     __tablename__ = "services"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False, index=True)
+    user_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("users.id"), nullable=False, index=True
+    )
 
-    service_type: Mapped[ServiceType] = mapped_column(default=ServiceType.VPN, nullable=False, index=True)
-    status: Mapped[ServiceStatus] = mapped_column(default=ServiceStatus.ACTIVE, nullable=False, index=True)
+    service_type: Mapped[ServiceType] = mapped_column(
+        default=ServiceType.VPN, nullable=False, index=True
+    )
+    status: Mapped[ServiceStatus] = mapped_column(
+        default=ServiceStatus.ACTIVE, nullable=False, index=True
+    )
 
     # Panel and Configuration
     panel_id: Mapped[int] = mapped_column(ForeignKey("panels.id"), nullable=False, index=True)
-    config_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)  # PasarGuard config ID
-    inbound_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)  # PasarGuard inbound ID
+    config_id: Mapped[str | None] = mapped_column(
+        String(255), nullable=True, index=True
+    )  # PasarGuard config ID
+    inbound_id: Mapped[int | None] = mapped_column(
+        Integer, nullable=True, index=True
+    )  # PasarGuard inbound ID
     client_email: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
 
     # Service Details
-    protocol: Mapped[str] = mapped_column(String(50), nullable=False)  # vless, vmess, trojan, shadowsocks
+    protocol: Mapped[str] = mapped_column(
+        String(50), nullable=False
+    )  # vless, vmess, trojan, shadowsocks
     server_address: Mapped[str] = mapped_column(String(255), nullable=False)
     port: Mapped[int] = mapped_column(nullable=False)
 
@@ -69,7 +81,9 @@ class Service(Base, TimestampMixin, SoftDeleteMixin):
     # Configuration Link
     config_link: Mapped[str | None] = mapped_column(Text, nullable=True)
     qr_code: Mapped[str | None] = mapped_column(Text, nullable=True)  # Base64 QR code
-    sub_token: Mapped[str | None] = mapped_column(String(128), nullable=True, unique=True, index=True)
+    sub_token: Mapped[str | None] = mapped_column(
+        String(128), nullable=True, unique=True, index=True
+    )
 
     # Notes
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -81,7 +95,9 @@ class Service(Base, TimestampMixin, SoftDeleteMixin):
     # Relationships
     user: Mapped[User] = relationship("User", back_populates="services")
     panel: Mapped[Panel] = relationship("Panel", back_populates="services")
-    purchases: Mapped[list[Purchase]] = relationship("Purchase", back_populates="service", lazy="selectin")
+    purchases: Mapped[list[Purchase]] = relationship(
+        "Purchase", back_populates="service", lazy="selectin"
+    )
     configurations: Mapped[list[ServiceConfiguration]] = relationship(
         "ServiceConfiguration",
         back_populates="service",
@@ -123,5 +139,8 @@ class Service(Base, TimestampMixin, SoftDeleteMixin):
         if self.remaining_traffic_gb is not None:
             used = self.total_traffic_gb - self.remaining_traffic_gb
             return (used / self.total_traffic_gb) * 100
-        return (self.used_traffic_gb / self.total_traffic_gb) * 100 if self.total_traffic_gb > 0 else 0.0
-
+        return (
+            (self.used_traffic_gb / self.total_traffic_gb) * 100
+            if self.total_traffic_gb > 0
+            else 0.0
+        )

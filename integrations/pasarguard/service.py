@@ -329,4 +329,3 @@ class PasarGuardService(VPNPanelInterface):
         if self._client:
             await self._client.close()
             self._client = None
-

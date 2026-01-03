@@ -15,7 +15,9 @@ from database.models import Service, User
 from database.session import get_db
 
 
-async def admin_users_list_callback(update: Update, context: ContextTypes.DEFAULT_TYPE, page: int = 0) -> None:
+async def admin_users_list_callback(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, page: int = 0
+) -> None:
     """List all users with pagination."""
     query = update.callback_query
     if not query:
@@ -43,10 +45,14 @@ async def admin_users_list_callback(update: Update, context: ContextTypes.DEFAUL
             return
 
         text = f"👥 مدیریت کاربران\n\nتعداد کل: {len(users)}\n\n"
-        await query.edit_message_text(text, reply_markup=admin_users_list_keyboard(users, page=page))
+        await query.edit_message_text(
+            text, reply_markup=admin_users_list_keyboard(users, page=page)
+        )
 
 
-async def admin_user_detail_callback(update: Update, context: ContextTypes.DEFAULT_TYPE, user_id: int) -> None:
+async def admin_user_detail_callback(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, user_id: int
+) -> None:
     """Show user details and management options."""
     query = update.callback_query
     if not query:
@@ -69,16 +75,16 @@ async def admin_user_detail_callback(update: Update, context: ContextTypes.DEFAU
             return
 
         # Get user services count
-        services_count = await db.scalar(
-            select(func.count(Service.id)).where(Service.user_id == user_id)
-        ) or 0
+        services_count = (
+            await db.scalar(select(func.count(Service.id)).where(Service.user_id == user_id)) or 0
+        )
 
         # Get user purchases count
         from database.models import Purchase
 
-        purchases_count = await db.scalar(
-            select(func.count(Purchase.id)).where(Purchase.user_id == user_id)
-        ) or 0
+        purchases_count = (
+            await db.scalar(select(func.count(Purchase.id)).where(Purchase.user_id == user_id)) or 0
+        )
 
         text = (
             f"👤 کاربر: {db_user.username or f'User {user_id}'}\n\n"
@@ -92,7 +98,9 @@ async def admin_user_detail_callback(update: Update, context: ContextTypes.DEFAU
         await query.edit_message_text(text, reply_markup=admin_user_detail_keyboard(user_id))
 
 
-async def admin_user_balance_callback(update: Update, context: ContextTypes.DEFAULT_TYPE, user_id: int) -> None:
+async def admin_user_balance_callback(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, user_id: int
+) -> None:
     """Start process to edit user balance."""
     query = update.callback_query
     if not query:
@@ -127,7 +135,9 @@ async def admin_user_balance_callback(update: Update, context: ContextTypes.DEFA
         await query.edit_message_text(text)
 
 
-async def admin_user_services_callback(update: Update, context: ContextTypes.DEFAULT_TYPE, user_id: int) -> None:
+async def admin_user_services_callback(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, user_id: int
+) -> None:
     """Show user's services."""
     query = update.callback_query
     if not query:
@@ -162,4 +172,3 @@ async def admin_user_services_callback(update: Update, context: ContextTypes.DEF
                 text += f"#{svc.id} - {svc.protocol.upper()} - {svc.status.value}\n"
 
         await query.edit_message_text(text, reply_markup=admin_user_detail_keyboard(user_id))
-

@@ -20,9 +20,13 @@ class TrialAccount(Base, TimestampMixin):
     __tablename__ = "trial_accounts"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False, index=True)
+    user_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("users.id"), nullable=False, index=True
+    )
 
-    service_id: Mapped[int | None] = mapped_column(ForeignKey("services.id"), nullable=True, index=True)
+    service_id: Mapped[int | None] = mapped_column(
+        ForeignKey("services.id"), nullable=True, index=True
+    )
 
     # Trial Details
     duration_days: Mapped[int] = mapped_column(nullable=False, default=1)
@@ -55,4 +59,3 @@ class TrialAccount(Base, TimestampMixin):
         """Get days remaining."""
         delta = self.expiry_date - datetime.utcnow()
         return max(0, delta.days) if delta.total_seconds() > 0 else 0
-

@@ -63,12 +63,19 @@ async def refund_purchase(
                             await panel_service.delete_user(username=svc.client_email)
                         except PanelUserNotFoundError:
                             # User already deleted on panel, continue
-                            logger.warning(f"User {svc.client_email} not found on panel {panel.name} during refund, already deleted")
+                            logger.warning(
+                                f"User {svc.client_email} not found on panel {panel.name} during refund, already deleted"
+                            )
                         except (PanelConnectionError, PanelError) as e:
-                            logger.warning(f"Panel error deleting user {svc.client_email} from panel {panel.name} during refund: {e}")
+                            logger.warning(
+                                f"Panel error deleting user {svc.client_email} from panel {panel.name} during refund: {e}"
+                            )
                             # Continue with refund even if panel operation fails
                         except Exception as e:
-                            logger.warning(f"Unexpected error deleting panel user during refund: {e}", exc_info=True)
+                            logger.warning(
+                                f"Unexpected error deleting panel user during refund: {e}",
+                                exc_info=True,
+                            )
                     except Exception as e:
                         logger.warning(f"Failed to create panel service for refund: {e}")
                     finally:
@@ -148,18 +155,29 @@ async def remove_service(
                 await panel_service.delete_user(username=service.client_email)
             except PanelUserNotFoundError:
                 # User already deleted on panel, continue
-                logger.warning(f"User {service.client_email} not found on panel {panel.name}, already deleted")
+                logger.warning(
+                    f"User {service.client_email} not found on panel {panel.name}, already deleted"
+                )
             except PanelConnectionError as e:
-                logger.error(f"Cannot connect to panel {panel.name} to remove user for service_id={service_id}: {e}")
+                logger.error(
+                    f"Cannot connect to panel {panel.name} to remove user for service_id={service_id}: {e}"
+                )
                 # Continue with service cancellation even if panel is unreachable
             except PanelError as e:
-                logger.error(f"Panel error removing user {service.client_email} from panel {panel.name} for service_id={service_id}: {e}")
+                logger.error(
+                    f"Panel error removing user {service.client_email} from panel {panel.name} for service_id={service_id}: {e}"
+                )
                 # Continue with service cancellation
             except Exception as e:
-                logger.error(f"Unexpected error removing panel user for service_id={service_id}: {e}", exc_info=True)
+                logger.error(
+                    f"Unexpected error removing panel user for service_id={service_id}: {e}",
+                    exc_info=True,
+                )
                 # Continue with service cancellation
         except Exception as e:
-            logger.error(f"Failed to create panel service for panel {panel.name} to remove service_id={service_id}: {e}")
+            logger.error(
+                f"Failed to create panel service for panel {panel.name} to remove service_id={service_id}: {e}"
+            )
             # Continue with service cancellation
         finally:
             if panel_service:
@@ -170,7 +188,10 @@ async def remove_service(
 
     # Mark service as cancelled
     service.status = ServiceStatus.CANCELLED
-    service.notes = (service.notes or "") + f"\n[Removed at {datetime.utcnow().isoformat()} by admin_id={admin_id}. Reason: {reason or 'N/A'}]"
+    service.notes = (
+        (service.notes or "")
+        + f"\n[Removed at {datetime.utcnow().isoformat()} by admin_id={admin_id}. Reason: {reason or 'N/A'}]"
+    )
     await db.commit()
 
     # Audit log entry
@@ -189,4 +210,3 @@ async def remove_service(
 
     logger.info(f"Removed service_id={service_id} admin_id={admin_id}")
     return {"status": "removed", "service_id": service_id}
-

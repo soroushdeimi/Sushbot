@@ -43,4 +43,3 @@ class ServiceConfiguration(Base, TimestampMixin):
 
     def __repr__(self) -> str:
         return f"<ServiceConfiguration(id={self.id}, service_id={self.service_id}, protocol={self.protocol})>"
-

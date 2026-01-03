@@ -26,9 +26,13 @@ class Admin(Base, TimestampMixin):
     __tablename__ = "admins"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), unique=True, nullable=False, index=True)
+    user_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("users.id"), unique=True, nullable=False, index=True
+    )
 
-    level: Mapped[AdminLevel] = mapped_column(default=AdminLevel.SUPPORT, nullable=False, index=True)
+    level: Mapped[AdminLevel] = mapped_column(
+        default=AdminLevel.SUPPORT, nullable=False, index=True
+    )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     # Permissions (stored as JSON in database, but using string for simplicity)
@@ -53,7 +57,12 @@ class Admin(Base, TimestampMixin):
     @property
     def can_manage_sales(self) -> bool:
         """Check if admin can manage sales."""
-        return self.level in [AdminLevel.SUPER_ADMIN, AdminLevel.ADMIN, AdminLevel.MANAGEMENT, AdminLevel.SALES]
+        return self.level in [
+            AdminLevel.SUPER_ADMIN,
+            AdminLevel.ADMIN,
+            AdminLevel.MANAGEMENT,
+            AdminLevel.SALES,
+        ]
 
     @property
     def can_manage_support(self) -> bool:
@@ -64,4 +73,3 @@ class Admin(Base, TimestampMixin):
             AdminLevel.MANAGEMENT,
             AdminLevel.SUPPORT,
         ]
-

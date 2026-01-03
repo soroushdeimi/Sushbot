@@ -29,6 +29,3 @@ async def ensure_service_sub_token(db: AsyncSession, service) -> str:
     service.sub_token = secrets.token_urlsafe(24)
     await db.commit()
     return str(service.sub_token)
-
-
-

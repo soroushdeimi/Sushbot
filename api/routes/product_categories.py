@@ -60,7 +60,12 @@ async def list_categories(
         .offset(offset)
     )
     items = list(res.scalars().all())
-    await audit(db, actor_user_id=cur.user.id, action="api.product_categories.list", meta={"limit": limit, "offset": offset})
+    await audit(
+        db,
+        actor_user_id=cur.user.id,
+        action="api.product_categories.list",
+        meta={"limit": limit, "offset": offset},
+    )
     return [
         ProductCategoryOut(
             id=int(c.id),
@@ -88,13 +93,20 @@ async def create_category(
     if body.parent_id:
         parent = await db.get(ProductCategory, body.parent_id)
         if not parent:
-            raise HTTPException(status_code=400, detail=f"Parent category {body.parent_id} not found")
+            raise HTTPException(
+                status_code=400, detail=f"Parent category {body.parent_id} not found"
+            )
 
     category = ProductCategory(**body.model_dump())
     db.add(category)
     await db.commit()
     await db.refresh(category)
-    await audit(db, actor_user_id=cur.user.id, action="api.product_categories.create", meta={"id": int(category.id)})
+    await audit(
+        db,
+        actor_user_id=cur.user.id,
+        action="api.product_categories.create",
+        meta={"id": int(category.id)},
+    )
     return ProductCategoryOut(
         id=int(category.id),
         name=category.name,
@@ -127,14 +139,21 @@ async def update_category(
         if body.parent_id:
             parent = await db.get(ProductCategory, body.parent_id)
             if not parent:
-                raise HTTPException(status_code=400, detail=f"Parent category {body.parent_id} not found")
+                raise HTTPException(
+                    status_code=400, detail=f"Parent category {body.parent_id} not found"
+                )
 
     data = body.model_dump(exclude_unset=True)
     for k, v in data.items():
         setattr(category, k, v)
     await db.commit()
     await db.refresh(category)
-    await audit(db, actor_user_id=cur.user.id, action="api.product_categories.update", meta={"id": int(category.id), "fields": list(data.keys())})
+    await audit(
+        db,
+        actor_user_id=cur.user.id,
+        action="api.product_categories.update",
+        meta={"id": int(category.id), "fields": list(data.keys())},
+    )
     return ProductCategoryOut(
         id=int(category.id),
         name=category.name,
@@ -161,8 +180,13 @@ async def delete_category(
 
     # Soft delete
     from datetime import datetime
+
     category.deleted_at = datetime.utcnow()
     await db.commit()
-    await audit(db, actor_user_id=cur.user.id, action="api.product_categories.delete", meta={"id": int(category.id)})
+    await audit(
+        db,
+        actor_user_id=cur.user.id,
+        action="api.product_categories.delete",
+        meta={"id": int(category.id)},
+    )
     return {"status": "deleted", "id": category_id}
-

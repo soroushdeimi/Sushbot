@@ -38,15 +38,27 @@ REGISTRY: dict[str, Feature] = {
     # Core flows
     "purchase": Feature("FEATURE_PURCHASE", True, description="Enable purchase flow"),
     "trial": Feature("FEATURE_TRIAL", True, description="Enable trial flow"),
-    "services": Feature("FEATURE_SERVICES", True, description="Enable my services / service management UI"),
+    "services": Feature(
+        "FEATURE_SERVICES", True, description="Enable my services / service management UI"
+    ),
     "support": Feature("FEATURE_SUPPORT", True, description="Enable support tickets"),
     "wallet": Feature("FEATURE_WALLET", True, description="Enable wallet and top-up"),
     "discount": Feature("FEATURE_DISCOUNT", True, description="Enable discount codes"),
-    "affiliate": Feature("FEATURE_AFFILIATE", True, description="Enable affiliate/referral UI and rewards"),
-    "content_cms": Feature("FEATURE_CONTENT_CMS", True, description="Enable FAQ/Tutorial/text customization from DB"),
+    "affiliate": Feature(
+        "FEATURE_AFFILIATE", True, description="Enable affiliate/referral UI and rewards"
+    ),
+    "content_cms": Feature(
+        "FEATURE_CONTENT_CMS", True, description="Enable FAQ/Tutorial/text customization from DB"
+    ),
     # Restrictions / verification
-    "phone_verification": Feature("FEATURE_PHONE_VERIFICATION", True, description="Require phone verification (Telegram contact)"),
-    "channel_membership": Feature("FEATURE_CHANNEL_MEMBERSHIP", False, description="Require channel membership checks"),
+    "phone_verification": Feature(
+        "FEATURE_PHONE_VERIFICATION",
+        True,
+        description="Require phone verification (Telegram contact)",
+    ),
+    "channel_membership": Feature(
+        "FEATURE_CHANNEL_MEMBERSHIP", False, description="Require channel membership checks"
+    ),
     "require_phone_for_purchase": Feature(
         "FEATURE_REQUIRE_PHONE_FOR_PURCHASE",
         True,
@@ -72,26 +84,51 @@ REGISTRY: dict[str, Feature] = {
         description="Require channel membership before trial",
     ),
     # Payments
-    "pay_card_to_card": Feature("FEATURE_PAY_CARD_TO_CARD", True, deps=("purchase",), description="Enable card-to-card"),
-    "pay_nowpayments": Feature("FEATURE_PAY_NOWPAYMENTS", True, deps=("purchase",), description="Enable NowPayments"),
-    "pay_aqayepardakht": Feature("FEATURE_PAY_AQAYEPARDAKHT", True, deps=("purchase",), description="Enable Aqayepardakht"),
-    "pay_rial_exchange": Feature("FEATURE_PAY_RIAL_EXCHANGE", False, deps=("purchase",), description="Enable Rial exchange gateways"),
+    "pay_card_to_card": Feature(
+        "FEATURE_PAY_CARD_TO_CARD", True, deps=("purchase",), description="Enable card-to-card"
+    ),
+    "pay_nowpayments": Feature(
+        "FEATURE_PAY_NOWPAYMENTS", True, deps=("purchase",), description="Enable NowPayments"
+    ),
+    "pay_aqayepardakht": Feature(
+        "FEATURE_PAY_AQAYEPARDAKHT", True, deps=("purchase",), description="Enable Aqayepardakht"
+    ),
+    "pay_rial_exchange": Feature(
+        "FEATURE_PAY_RIAL_EXCHANGE",
+        False,
+        deps=("purchase",),
+        description="Enable Rial exchange gateways",
+    ),
     # Admin / web
     "admin_web": Feature("FEATURE_ADMIN_WEB", True, description="Enable FastAPI admin panel"),
-    "admin_telegram": Feature("FEATURE_ADMIN_TELEGRAM", True, description="Enable Telegram admin commands"),
+    "admin_telegram": Feature(
+        "FEATURE_ADMIN_TELEGRAM", True, description="Enable Telegram admin commands"
+    ),
     "reporting": Feature("FEATURE_REPORTING", True, description="Enable reports/stats"),
     # Advanced ops
-    "inventory": Feature("FEATURE_INVENTORY", True, description="Enable inventory enforcement for products"),
+    "inventory": Feature(
+        "FEATURE_INVENTORY", True, description="Enable inventory enforcement for products"
+    ),
     "reseller": Feature("FEATURE_RESELLER", False, description="Enable reseller workflows"),
-    "bulk_purchase": Feature("FEATURE_BULK_PURCHASE", False, description="Enable bulk purchase flow"),
+    "bulk_purchase": Feature(
+        "FEATURE_BULK_PURCHASE", False, description="Enable bulk purchase flow"
+    ),
     "refunds": Feature("FEATURE_REFUNDS", False, description="Enable refunds"),
-    "service_removal": Feature("FEATURE_SERVICE_REMOVAL", False, description="Enable service removal/deprovision"),
-    "service_transfer": Feature("FEATURE_SERVICE_TRANSFER", False, description="Enable transfer services between users"),
-    "service_location_change": Feature("FEATURE_SERVICE_LOCATION_CHANGE", False, description="Enable location/inbound change"),
+    "service_removal": Feature(
+        "FEATURE_SERVICE_REMOVAL", False, description="Enable service removal/deprovision"
+    ),
+    "service_transfer": Feature(
+        "FEATURE_SERVICE_TRANSFER", False, description="Enable transfer services between users"
+    ),
+    "service_location_change": Feature(
+        "FEATURE_SERVICE_LOCATION_CHANGE", False, description="Enable location/inbound change"
+    ),
 }
 
 
-def is_enabled(feature_key: str, *, env: os._Environ[str] = os.environ, _seen: set[str] | None = None) -> bool:
+def is_enabled(
+    feature_key: str, *, env: os._Environ[str] = os.environ, _seen: set[str] | None = None
+) -> bool:
     """Check if a feature is enabled, including dependencies."""
     ft = REGISTRY.get(feature_key)
     if not ft:
@@ -121,5 +158,3 @@ def enabled_payment_gateways(*, env: os._Environ[str] = os.environ) -> set[str]:
     if is_enabled("pay_aqayepardakht", env=env):
         out.add("aqayepardakht")
     return out
-
-

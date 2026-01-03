@@ -27,18 +27,26 @@ async def get_overall_stats(db: AsyncSession) -> dict[str, Any]:
     res = await db.execute(select(func.count(User.id)))
     total_users = int(res.scalar() or 0)
 
-    res = await db.execute(select(func.count(Service.id)).where(Service.status == ServiceStatus.ACTIVE))
+    res = await db.execute(
+        select(func.count(Service.id)).where(Service.status == ServiceStatus.ACTIVE)
+    )
     active_services = int(res.scalar() or 0)
 
     res = await db.execute(
-        select(func.coalesce(func.sum(Purchase.final_amount), 0)).where(Purchase.status == PurchaseStatus.COMPLETED)
+        select(func.coalesce(func.sum(Purchase.final_amount), 0)).where(
+            Purchase.status == PurchaseStatus.COMPLETED
+        )
     )
     total_revenue = int(res.scalar() or 0)
 
-    res = await db.execute(select(func.count(Purchase.id)).where(Purchase.status == PurchaseStatus.COMPLETED))
+    res = await db.execute(
+        select(func.count(Purchase.id)).where(Purchase.status == PurchaseStatus.COMPLETED)
+    )
     total_purchases = int(res.scalar() or 0)
 
-    res = await db.execute(select(func.count(TrialAccount.id)).where(TrialAccount.is_used.is_(True)))
+    res = await db.execute(
+        select(func.count(TrialAccount.id)).where(TrialAccount.is_used.is_(True))
+    )
     total_trials = int(res.scalar() or 0)
 
     res = await db.execute(
@@ -79,7 +87,9 @@ async def get_purchase_report(
     if purchase_type:
         query = query.where(Purchase.purchase_type == purchase_type)
 
-    res = await db.execute(query.options(selectinload(Purchase.user), selectinload(Purchase.product)))
+    res = await db.execute(
+        query.options(selectinload(Purchase.user), selectinload(Purchase.product))
+    )
     purchases = list(res.scalars().all())
 
     total_amount = sum(int(p.final_amount) for p in purchases)
@@ -90,13 +100,21 @@ async def get_purchase_report(
     for p in purchases:
         pid = p.product_id or 0
         if pid not in by_product:
-            by_product[pid] = {"count": 0, "revenue": 0, "product_name": p.product.name if p.product else "N/A"}
+            by_product[pid] = {
+                "count": 0,
+                "revenue": 0,
+                "product_name": p.product.name if p.product else "N/A",
+            }
         by_product[pid]["count"] += 1
         by_product[pid]["revenue"] += int(p.final_amount)
 
     # Group by gateway
     res = await db.execute(
-        select(Payment.gateway, func.count(Payment.id), func.coalesce(func.sum(Purchase.final_amount), 0))
+        select(
+            Payment.gateway,
+            func.count(Payment.id),
+            func.coalesce(func.sum(Purchase.final_amount), 0),
+        )
         .join(Purchase, Payment.purchase_id == Purchase.id)
         .where(Purchase.status == PurchaseStatus.COMPLETED)
         .group_by(Payment.gateway)
@@ -177,12 +195,16 @@ async def get_user_stats(db: AsyncSession, *, user_id: int) -> dict[str, Any]:
         return {}
 
     res = await db.execute(
-        select(func.count(Service.id)).where(Service.user_id == user_id, Service.status == ServiceStatus.ACTIVE)
+        select(func.count(Service.id)).where(
+            Service.user_id == user_id, Service.status == ServiceStatus.ACTIVE
+        )
     )
     active_services = int(res.scalar() or 0)
 
     res = await db.execute(
-        select(func.count(Purchase.id)).where(Purchase.user_id == user_id, Purchase.status == PurchaseStatus.COMPLETED)
+        select(func.count(Purchase.id)).where(
+            Purchase.user_id == user_id, Purchase.status == PurchaseStatus.COMPLETED
+        )
     )
     total_purchases = int(res.scalar() or 0)
 
@@ -194,7 +216,9 @@ async def get_user_stats(db: AsyncSession, *, user_id: int) -> dict[str, Any]:
     total_spent = int(res.scalar() or 0)
 
     res = await db.execute(
-        select(func.count(TrialAccount.id)).where(TrialAccount.user_id == user_id, TrialAccount.is_used.is_(True))
+        select(func.count(TrialAccount.id)).where(
+            TrialAccount.user_id == user_id, TrialAccount.is_used.is_(True)
+        )
     )
     trials_used = int(res.scalar() or 0)
 
@@ -231,4 +255,3 @@ async def get_revenue_breakdown(db: AsyncSession, *, days: int = 30) -> dict[str
         daily.append({"date": str(row[0]), "count": int(row[1]), "revenue": int(row[2])})
 
     return {"period_days": days, "daily_breakdown": daily}
-

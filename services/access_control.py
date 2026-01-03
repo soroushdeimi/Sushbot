@@ -50,14 +50,18 @@ async def ensure_phone_verified(
     msg = t("phone_verification_required", db_user, lang)
     # Use reply keyboard with request_contact
     if update.callback_query and update.callback_query.message:
-        await update.callback_query.message.reply_text(msg, reply_markup=phone_request_keyboard(db_user))
+        await update.callback_query.message.reply_text(
+            msg, reply_markup=phone_request_keyboard(db_user)
+        )
     elif update.message:
         await update.message.reply_text(msg, reply_markup=phone_request_keyboard(db_user))
     else:
         # Fallback: best-effort.
         uid = update.effective_user.id if update.effective_user else None
         if uid:
-            await context.bot.send_message(chat_id=uid, text=msg, reply_markup=phone_request_keyboard(db_user))
+            await context.bot.send_message(
+                chat_id=uid, text=msg, reply_markup=phone_request_keyboard(db_user)
+            )
     return GuardResult(False, "phone_required")
 
 
@@ -80,7 +84,11 @@ async def ensure_channel_member(
         return GuardResult(True)
 
     user_id = db_user.id
-    channel = settings.required_channel_id or (f"@{settings.required_channel_username.lstrip('@')}" if settings.required_channel_username else None)
+    channel = settings.required_channel_id or (
+        f"@{settings.required_channel_username.lstrip('@')}"
+        if settings.required_channel_username
+        else None
+    )
     if not channel:
         return GuardResult(True)
 
@@ -100,7 +108,13 @@ async def ensure_channel_member(
     join_btns: list[list[InlineKeyboardButton]] = []
     if url:
         join_btns.append([InlineKeyboardButton(t("join_channel", db_user, lang), url=url)])
-    join_btns.append([InlineKeyboardButton(t("i_joined_check", db_user, lang), callback_data="check_channel_member")])
+    join_btns.append(
+        [
+            InlineKeyboardButton(
+                t("i_joined_check", db_user, lang), callback_data="check_channel_member"
+            )
+        ]
+    )
     kb = InlineKeyboardMarkup(join_btns)
 
     msg = t("channel_membership_required", db_user, lang)
@@ -110,7 +124,9 @@ async def ensure_channel_member(
         await update.message.reply_text(msg, reply_markup=kb)
     else:
         if update.effective_user:
-            await context.bot.send_message(chat_id=update.effective_user.id, text=msg, reply_markup=kb)
+            await context.bot.send_message(
+                chat_id=update.effective_user.id, text=msg, reply_markup=kb
+            )
     return GuardResult(False, "channel_required")
 
 
@@ -127,5 +143,3 @@ async def ensure_access(
         return r
     r = await ensure_phone_verified(update, context, db_user=db_user, purpose=purpose)
     return r
-
-

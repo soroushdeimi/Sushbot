@@ -85,7 +85,12 @@ async def list_products(
     query = query.order_by(Product.id.desc()).limit(limit).offset(offset)
     res = await db.execute(query)
     items = list(res.scalars().all())
-    await audit(db, actor_user_id=cur.user.id, action="api.products.list", meta={"limit": limit, "offset": offset, "category_id": category_id})
+    await audit(
+        db,
+        actor_user_id=cur.user.id,
+        action="api.products.list",
+        meta={"limit": limit, "offset": offset, "category_id": category_id},
+    )
     return [
         ProductOut(
             id=int(p.id),
@@ -155,7 +160,12 @@ async def update_product(
         setattr(p, k, v)
     await db.commit()
     await db.refresh(p)
-    await audit(db, actor_user_id=cur.user.id, action="api.products.update", meta={"id": int(p.id), "fields": list(data.keys())})
+    await audit(
+        db,
+        actor_user_id=cur.user.id,
+        action="api.products.update",
+        meta={"id": int(p.id), "fields": list(data.keys())},
+    )
     return ProductOut(
         id=int(p.id),
         panel_id=int(p.panel_id),
@@ -174,5 +184,3 @@ async def update_product(
         min_stock=int(p.min_stock),
         max_stock=int(p.max_stock) if p.max_stock is not None else None,
     )
-
-

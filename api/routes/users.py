@@ -34,7 +34,12 @@ async def list_users(
     """List all users."""
     res = await db.execute(select(User).order_by(User.id.desc()).limit(limit).offset(offset))
     users = list(res.scalars().all())
-    await audit(db, actor_user_id=cur.user.id, action="api.users.list", meta={"limit": limit, "offset": offset})
+    await audit(
+        db,
+        actor_user_id=cur.user.id,
+        action="api.users.list",
+        meta={"limit": limit, "offset": offset},
+    )
     return [
         UserOut(
             id=int(u.id),
@@ -46,4 +51,3 @@ async def list_users(
         )
         for u in users
     ]
-

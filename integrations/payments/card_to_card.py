@@ -65,4 +65,3 @@ class CardToCardGateway:
             "status": "pending",
             "tracking_code": tracking_code,
         }
-

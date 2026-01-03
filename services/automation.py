@@ -95,11 +95,13 @@ async def job_payment_reconcile(context: ContextTypes.DEFAULT_TYPE) -> None:
     now = datetime.utcnow()
     async with AsyncSessionLocal() as db:
         res = await db.execute(
-            select(Payment).where(
+            select(Payment)
+            .where(
                 Payment.gateway == PaymentGateway.NOWPAYMENTS,
                 Payment.status == PaymentStatus.PROCESSING,
                 Payment.gateway_transaction_id.is_not(None),
-            ).limit(50)
+            )
+            .limit(50)
         )
         pays = list(res.scalars().all())
         for pay in pays:
@@ -129,7 +131,10 @@ async def job_payment_reconcile(context: ContextTypes.DEFAULT_TYPE) -> None:
                             svc = await fulfill_purchase(db, purchase=purchase)
                             await award_referral_commission_for_purchase(db, purchase=purchase)
                             if svc and getattr(svc, "config_link", None):
-                                await context.bot.send_message(chat_id=purchase.user_id, text=f"✅ پرداخت شما تایید شد.\n\n🔗 {svc.config_link}")
+                                await context.bot.send_message(
+                                    chat_id=purchase.user_id,
+                                    text=f"✅ پرداخت شما تایید شد.\n\n🔗 {svc.config_link}",
+                                )
                             else:
                                 # wallet top-up or non-service purchase
                                 await context.bot.send_message(
@@ -137,7 +142,9 @@ async def job_payment_reconcile(context: ContextTypes.DEFAULT_TYPE) -> None:
                                     text=f"✅ پرداخت شما تایید شد.\n\n💰 کیف پول شما به مبلغ {int(purchase.final_amount):,} تومان شارژ شد.",
                                 )
                         except Exception as e:
-                            logger.warning(f"Reconcile fulfill failed purchase_id={purchase.id}: {e}")
+                            logger.warning(
+                                f"Reconcile fulfill failed purchase_id={purchase.id}: {e}"
+                            )
             except Exception as e:
                 logger.warning(f"Reconcile failed payment_id={pay.id}: {e}")
         await db.commit()
@@ -151,7 +158,9 @@ async def job_cleanup(context: ContextTypes.DEFAULT_TYPE) -> None:
     cutoff = now - timedelta(hours=24)
     async with AsyncSessionLocal() as db:
         res = await db.execute(
-            select(Purchase).where(Purchase.status == PurchaseStatus.PENDING, Purchase.created_at < cutoff).limit(200)
+            select(Purchase)
+            .where(Purchase.status == PurchaseStatus.PENDING, Purchase.created_at < cutoff)
+            .limit(200)
         )
         stale = list(res.scalars().all())
         for p in stale:
@@ -175,10 +184,14 @@ async def job_admin_daily_report(context: ContextTypes.DEFAULT_TYPE) -> None:
 
         res = await db.execute(select(func.count(User.id)).where(User.created_at >= since))
         new_users = int(res.scalar() or 0)
-        res = await db.execute(select(func.count(Service.id)).where(Service.status == ServiceStatus.ACTIVE))
+        res = await db.execute(
+            select(func.count(Service.id)).where(Service.status == ServiceStatus.ACTIVE)
+        )
         active_services = int(res.scalar() or 0)
         res = await db.execute(
-            select(func.count(Purchase.id)).where(Purchase.status == PurchaseStatus.COMPLETED, Purchase.completed_at >= since)
+            select(func.count(Purchase.id)).where(
+                Purchase.status == PurchaseStatus.COMPLETED, Purchase.completed_at >= since
+            )
         )
         completed_purchases = int(res.scalar() or 0)
         res = await db.execute(
@@ -187,7 +200,9 @@ async def job_admin_daily_report(context: ContextTypes.DEFAULT_TYPE) -> None:
             )
         )
         revenue = int(res.scalar() or 0)
-        res = await db.execute(select(func.count(Payment.id)).where(Payment.status == PaymentStatus.PROCESSING))
+        res = await db.execute(
+            select(func.count(Payment.id)).where(Payment.status == PaymentStatus.PROCESSING)
+        )
         processing_payments = int(res.scalar() or 0)
         res = await db.execute(
             select(func.count(Purchase.id)).where(
@@ -212,5 +227,3 @@ async def job_admin_daily_report(context: ContextTypes.DEFAULT_TYPE) -> None:
                 await context.bot.send_message(chat_id=a.user_id, text=txt)
             except Exception as e:
                 logger.warning(f"Failed to send report to admin {a.user_id}: {e}")
-
-

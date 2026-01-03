@@ -26,9 +26,13 @@ class WalletTransaction(Base, TimestampMixin):
     __tablename__ = "wallet_transactions"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    user_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
 
-    tx_type: Mapped[WalletTxType] = mapped_column(default=WalletTxType.ADJUST, nullable=False, index=True)
+    tx_type: Mapped[WalletTxType] = mapped_column(
+        default=WalletTxType.ADJUST, nullable=False, index=True
+    )
     amount: Mapped[int] = mapped_column(Integer, nullable=False)  # IRR (positive/negative)
     balance_after: Mapped[int] = mapped_column(Integer, nullable=False)
 
@@ -36,6 +40,3 @@ class WalletTransaction(Base, TimestampMixin):
     note: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     user: Mapped[User] = relationship("User", lazy="selectin")
-
-
-

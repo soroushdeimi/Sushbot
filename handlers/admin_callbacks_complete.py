@@ -75,7 +75,9 @@ async def admin_main_callback(update: Update, context: ContextTypes.DEFAULT_TYPE
         await query.edit_message_text(text, reply_markup=admin_main_keyboard())
 
 
-async def admin_payments_pending_callback(update: Update, context: ContextTypes.DEFAULT_TYPE, page: int = 0) -> None:
+async def admin_payments_pending_callback(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, page: int = 0
+) -> None:
     """List pending payments."""
     query = update.callback_query
     if not query:
@@ -106,10 +108,14 @@ async def admin_payments_pending_callback(update: Update, context: ContextTypes.
             return
 
         text = f"💰 پرداخت‌های در انتظار ({len(payments)} مورد)\n\n"
-        await query.edit_message_text(text, reply_markup=admin_payments_list_keyboard(payments, page=page))
+        await query.edit_message_text(
+            text, reply_markup=admin_payments_list_keyboard(payments, page=page)
+        )
 
 
-async def admin_payment_detail_callback(update: Update, context: ContextTypes.DEFAULT_TYPE, payment_id: int) -> None:
+async def admin_payment_detail_callback(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, payment_id: int
+) -> None:
     """Show payment details."""
     query = update.callback_query
     if not query:
@@ -171,7 +177,9 @@ async def admin_payment_detail_callback(update: Update, context: ContextTypes.DE
         await query.edit_message_text(text, reply_markup=admin_payment_detail_keyboard(payment_id))
 
 
-async def admin_payment_approve_callback(update: Update, context: ContextTypes.DEFAULT_TYPE, payment_id: int) -> None:
+async def admin_payment_approve_callback(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, payment_id: int
+) -> None:
     """Approve payment via callback."""
     query = update.callback_query
     if not query:
@@ -227,10 +235,14 @@ async def admin_payment_approve_callback(update: Update, context: ContextTypes.D
                     ensure_service_sub_token,
                     subscription_url_from_token,
                 )
+
                 tok = await ensure_service_sub_token(db, svc)
                 sub_url = subscription_url_from_token(tok)
                 sub_txt = f"\n\n🔗 Sub:\n{sub_url}" if sub_url else ""
-                await context.bot.send_message(chat_id=purchase.user_id, text=f"✅ پرداخت تایید شد.\n\n🔗 {svc.config_link}{sub_txt}")
+                await context.bot.send_message(
+                    chat_id=purchase.user_id,
+                    text=f"✅ پرداخت تایید شد.\n\n🔗 {svc.config_link}{sub_txt}",
+                )
             except Exception as e:
                 logger.warning(f"Failed to notify user {purchase.user_id}: {e}")
 
@@ -251,7 +263,9 @@ async def admin_payment_approve_callback(update: Update, context: ContextTypes.D
     await admin_payments_pending_callback(update, context, page=0)
 
 
-async def admin_payment_reject_callback(update: Update, context: ContextTypes.DEFAULT_TYPE, payment_id: int) -> None:
+async def admin_payment_reject_callback(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, payment_id: int
+) -> None:
     """Reject payment via callback."""
     query = update.callback_query
     if not query:
@@ -279,8 +293,10 @@ async def admin_payment_reject_callback(update: Update, context: ContextTypes.DE
             purchase.status = PurchaseStatus.FAILED
             if purchase.product_id:
                 from config.features import is_enabled
+
                 if is_enabled("inventory"):
                     from services.inventory import release_product_stock
+
                     await release_product_stock(db, product_id=int(purchase.product_id), quantity=1)
         pay.status = PaymentStatus.FAILED
         pay.admin_notes = "Rejected by admin"
@@ -290,7 +306,10 @@ async def admin_payment_reject_callback(update: Update, context: ContextTypes.DE
         await query.answer("❌ پرداخت رد شد.", show_alert=True)
         if purchase:
             try:
-                await context.bot.send_message(chat_id=purchase.user_id, text="❌ پرداخت شما رد شد. لطفاً با پشتیبانی تماس بگیرید.")
+                await context.bot.send_message(
+                    chat_id=purchase.user_id,
+                    text="❌ پرداخت شما رد شد. لطفاً با پشتیبانی تماس بگیرید.",
+                )
             except Exception as e:
                 logger.warning(f"Failed to notify user {purchase.user_id}: {e}")
 
@@ -316,7 +335,9 @@ async def admin_stats_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         # Overall stats
         total_users = (await db.execute(select(func.count(User.id)))).scalar() or 0
         active_services = (
-            await db.execute(select(func.count(Service.id)).where(Service.status == ServiceStatus.ACTIVE))
+            await db.execute(
+                select(func.count(Service.id)).where(Service.status == ServiceStatus.ACTIVE)
+            )
         ).scalar() or 0
         total_revenue = (
             await db.execute(
@@ -326,7 +347,9 @@ async def admin_stats_callback(update: Update, context: ContextTypes.DEFAULT_TYP
             )
         ).scalar() or 0
         pending_payments = (
-            await db.execute(select(func.count(Payment.id)).where(Payment.status == PaymentStatus.PENDING))
+            await db.execute(
+                select(func.count(Payment.id)).where(Payment.status == PaymentStatus.PENDING)
+            )
         ).scalar() or 0
 
         text = (
@@ -340,7 +363,9 @@ async def admin_stats_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         await query.edit_message_text(text, reply_markup=admin_main_keyboard())
 
 
-async def admin_users_callback(update: Update, context: ContextTypes.DEFAULT_TYPE, page: int = 0) -> None:
+async def admin_users_callback(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, page: int = 0
+) -> None:
     """List users."""
     query = update.callback_query
     if not query:
@@ -359,10 +384,14 @@ async def admin_users_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         users = list(res.scalars().all())
 
         text = f"👥 لیست کاربران ({len(users)} مورد)\n\n"
-        await query.edit_message_text(text, reply_markup=admin_users_list_keyboard(users, page=page))
+        await query.edit_message_text(
+            text, reply_markup=admin_users_list_keyboard(users, page=page)
+        )
 
 
-async def admin_user_detail_callback(update: Update, context: ContextTypes.DEFAULT_TYPE, user_id: int) -> None:
+async def admin_user_detail_callback(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, user_id: int
+) -> None:
     """Show user details."""
     query = update.callback_query
     if not query:
@@ -384,13 +413,18 @@ async def admin_user_detail_callback(update: Update, context: ContextTypes.DEFAU
 
         # Get user services
         res = await db.execute(
-            select(Service).where(Service.user_id == user_id, Service.status == ServiceStatus.ACTIVE)
+            select(Service).where(
+                Service.user_id == user_id, Service.status == ServiceStatus.ACTIVE
+            )
         )
         services = list(res.scalars().all())
 
         # Get user purchases
         res = await db.execute(
-            select(Purchase).where(Purchase.user_id == user_id).order_by(Purchase.created_at.desc()).limit(10)
+            select(Purchase)
+            .where(Purchase.user_id == user_id)
+            .order_by(Purchase.created_at.desc())
+            .limit(10)
         )
         purchases = list(res.scalars().all())
 
@@ -405,7 +439,9 @@ async def admin_user_detail_callback(update: Update, context: ContextTypes.DEFAU
         await query.edit_message_text(text, reply_markup=admin_user_detail_keyboard(user_id))
 
 
-async def admin_services_callback(update: Update, context: ContextTypes.DEFAULT_TYPE, page: int = 0) -> None:
+async def admin_services_callback(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, page: int = 0
+) -> None:
     """List services."""
     query = update.callback_query
     if not query:
@@ -424,10 +460,14 @@ async def admin_services_callback(update: Update, context: ContextTypes.DEFAULT_
         services = list(res.scalars().all())
 
         text = f"🔧 لیست سرویس‌ها ({len(services)} مورد)\n\n"
-        await query.edit_message_text(text, reply_markup=admin_services_list_keyboard(services, page=page))
+        await query.edit_message_text(
+            text, reply_markup=admin_services_list_keyboard(services, page=page)
+        )
 
 
-async def admin_service_detail_callback(update: Update, context: ContextTypes.DEFAULT_TYPE, service_id: int) -> None:
+async def admin_service_detail_callback(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, service_id: int
+) -> None:
     """Show service details."""
     query = update.callback_query
     if not query:
@@ -451,7 +491,11 @@ async def admin_service_detail_callback(update: Update, context: ContextTypes.DE
         owner_name = owner.username if owner else f"User {svc.user_id}"
 
         days = svc.days_remaining if svc.days_remaining is not None else "Unlimited"
-        traffic = "Unlimited" if svc.is_unlimited else f"{svc.remaining_traffic_gb:.2f}GB / {svc.total_traffic_gb:.2f}GB"
+        traffic = (
+            "Unlimited"
+            if svc.is_unlimited
+            else f"{svc.remaining_traffic_gb:.2f}GB / {svc.total_traffic_gb:.2f}GB"
+        )
 
         text = (
             f"🔧 جزئیات سرویس #{svc.id}\n\n"
@@ -466,7 +510,9 @@ async def admin_service_detail_callback(update: Update, context: ContextTypes.DE
         await query.edit_message_text(text, reply_markup=admin_service_detail_keyboard(service_id))
 
 
-async def admin_service_sync_callback(update: Update, context: ContextTypes.DEFAULT_TYPE, service_id: int) -> None:
+async def admin_service_sync_callback(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, service_id: int
+) -> None:
     """Sync service from PasarGuard."""
     query = update.callback_query
     if not query:
@@ -507,7 +553,9 @@ async def admin_service_sync_callback(update: Update, context: ContextTypes.DEFA
                 remaining = max(0.0, (int(limit) - used) / (1024**3))
                 svc.remaining_traffic_gb = remaining
             await db.commit()
-            await query.answer(f"✅ Sync انجام شد. مصرف: {svc.used_traffic_gb:.2f}GB", show_alert=True)
+            await query.answer(
+                f"✅ Sync انجام شد. مصرف: {svc.used_traffic_gb:.2f}GB", show_alert=True
+            )
         except Exception as e:
             await query.answer(f"❌ خطا: {str(e)}", show_alert=True)
         finally:
@@ -516,7 +564,9 @@ async def admin_service_sync_callback(update: Update, context: ContextTypes.DEFA
         await admin_service_detail_callback(update, context, service_id)
 
 
-async def admin_service_renew_callback(update: Update, context: ContextTypes.DEFAULT_TYPE, service_id: int) -> None:
+async def admin_service_renew_callback(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, service_id: int
+) -> None:
     """Renew service."""
     query = update.callback_query
     if not query:
@@ -543,7 +593,9 @@ async def admin_service_renew_callback(update: Update, context: ContextTypes.DEF
         await admin_service_detail_callback(update, context, service_id)
 
 
-async def admin_service_addgb_callback(update: Update, context: ContextTypes.DEFAULT_TYPE, service_id: int) -> None:
+async def admin_service_addgb_callback(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, service_id: int
+) -> None:
     """Add traffic to service."""
     query = update.callback_query
     if not query:
@@ -570,7 +622,9 @@ async def admin_service_addgb_callback(update: Update, context: ContextTypes.DEF
         await admin_service_detail_callback(update, context, service_id)
 
 
-async def admin_service_rotate_callback(update: Update, context: ContextTypes.DEFAULT_TYPE, service_id: int) -> None:
+async def admin_service_rotate_callback(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, service_id: int
+) -> None:
     """Rotate service credentials."""
     query = update.callback_query
     if not query:
@@ -597,7 +651,9 @@ async def admin_service_rotate_callback(update: Update, context: ContextTypes.DE
         await admin_service_detail_callback(update, context, service_id)
 
 
-async def admin_service_remove_callback(update: Update, context: ContextTypes.DEFAULT_TYPE, service_id: int) -> None:
+async def admin_service_remove_callback(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, service_id: int
+) -> None:
     """Remove service."""
     query = update.callback_query
     if not query:
@@ -618,7 +674,9 @@ async def admin_service_remove_callback(update: Update, context: ContextTypes.DE
             return
 
         try:
-            await remove_service(db, service=svc, admin_id=user.id, reason="Removed via admin panel")
+            await remove_service(
+                db, service=svc, admin_id=user.id, reason="Removed via admin panel"
+            )
             await query.answer("✅ سرویس حذف شد.", show_alert=True)
         except Exception as e:
             await query.answer(f"❌ خطا: {str(e)}", show_alert=True)
@@ -641,7 +699,11 @@ async def admin_products_callback(update: Update, context: ContextTypes.DEFAULT_
             await query.answer("Admin only.", show_alert=True)
             return
 
-        res = await db.execute(select(Product).where(Product.status == ProductStatus.ACTIVE).order_by(Product.sort_order.asc()))
+        res = await db.execute(
+            select(Product)
+            .where(Product.status == ProductStatus.ACTIVE)
+            .order_by(Product.sort_order.asc())
+        )
         products = list(res.scalars().all())
 
         text = f"📦 لیست محصولات ({len(products)} مورد)\n\n"
@@ -716,7 +778,9 @@ async def admin_set_card_callback(update: Update, context: ContextTypes.DEFAULT_
             await query.answer("Admin only.", show_alert=True)
             return
 
-        await query.edit_message_text("برای تنظیم کارت از دستور استفاده کنید:\n/setcard <شماره_کارت> [نام_صاحب]")
+        await query.edit_message_text(
+            "برای تنظیم کارت از دستور استفاده کنید:\n/setcard <شماره_کارت> [نام_صاحب]"
+        )
         await query.answer()
 
 
@@ -735,7 +799,9 @@ async def admin_set_nowpay_callback(update: Update, context: ContextTypes.DEFAUL
             await query.answer("Admin only.", show_alert=True)
             return
 
-        await query.edit_message_text("برای تنظیم NowPayments از دستور استفاده کنید:\n/setnowpay <api_key> <ipn_secret>")
+        await query.edit_message_text(
+            "برای تنظیم NowPayments از دستور استفاده کنید:\n/setnowpay <api_key> <ipn_secret>"
+        )
         await query.answer()
 
 
@@ -754,7 +820,9 @@ async def admin_set_aqaye_callback(update: Update, context: ContextTypes.DEFAULT
             await query.answer("Admin only.", show_alert=True)
             return
 
-        await query.edit_message_text("برای تنظیم Aqayepardakht از دستور استفاده کنید:\n/setaqaye <pin>")
+        await query.edit_message_text(
+            "برای تنظیم Aqayepardakht از دستور استفاده کنید:\n/setaqaye <pin>"
+        )
         await query.answer()
 
 
@@ -773,7 +841,9 @@ async def admin_set_faq_callback(update: Update, context: ContextTypes.DEFAULT_T
             await query.answer("Admin only.", show_alert=True)
             return
 
-        await query.edit_message_text("برای تنظیم FAQ از دستور استفاده کنید:\n/setfaq <fa|en> <متن>")
+        await query.edit_message_text(
+            "برای تنظیم FAQ از دستور استفاده کنید:\n/setfaq <fa|en> <متن>"
+        )
         await query.answer()
 
 
@@ -792,6 +862,7 @@ async def admin_set_tutorial_callback(update: Update, context: ContextTypes.DEFA
             await query.answer("Admin only.", show_alert=True)
             return
 
-        await query.edit_message_text("برای تنظیم Tutorial از دستور استفاده کنید:\n/settutorial <fa|en> <متن>")
+        await query.edit_message_text(
+            "برای تنظیم Tutorial از دستور استفاده کنید:\n/settutorial <fa|en> <متن>"
+        )
         await query.answer()
-

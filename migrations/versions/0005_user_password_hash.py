@@ -16,6 +16,3 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     op.execute("ALTER TABLE users DROP COLUMN IF EXISTS password_hash;")
-
-
-

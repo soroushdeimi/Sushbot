@@ -46,15 +46,21 @@ class Payment(Base, TimestampMixin):
     purchase_id: Mapped[int] = mapped_column(ForeignKey("purchases.id"), nullable=False, index=True)
 
     gateway: Mapped[PaymentGateway] = mapped_column(nullable=False, index=True)
-    status: Mapped[PaymentStatus] = mapped_column(default=PaymentStatus.PENDING, nullable=False, index=True)
+    status: Mapped[PaymentStatus] = mapped_column(
+        default=PaymentStatus.PENDING, nullable=False, index=True
+    )
 
     # Amount
     amount: Mapped[int] = mapped_column(Numeric(15, 0), nullable=False)  # Amount in Rials
     currency: Mapped[str] = mapped_column(String(10), default="IRR", nullable=False)
 
     # Gateway-specific fields
-    gateway_transaction_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
-    gateway_response: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON response from gateway
+    gateway_transaction_id: Mapped[str | None] = mapped_column(
+        String(255), nullable=True, index=True
+    )
+    gateway_response: Mapped[str | None] = mapped_column(
+        Text, nullable=True
+    )  # JSON response from gateway
 
     # Card-to-card specific
     card_number: Mapped[str | None] = mapped_column(String(20), nullable=True)
@@ -82,4 +88,3 @@ class Payment(Base, TimestampMixin):
     def is_pending(self) -> bool:
         """Check if payment is pending."""
         return self.status == PaymentStatus.PENDING
-

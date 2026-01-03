@@ -25,6 +25,3 @@ def upgrade() -> None:
 def downgrade() -> None:
     op.execute("DROP INDEX IF EXISTS uq_services_sub_token_partial;")
     op.execute("ALTER TABLE services DROP COLUMN IF EXISTS sub_token;")
-
-
-

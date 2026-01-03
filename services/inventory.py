@@ -54,5 +54,3 @@ async def consume_stock(db: AsyncSession, *, product_id: int, qty: int = 1) -> N
         raise InventoryError("reserved_underflow")
     p.reserved_quantity = int(p.reserved_quantity) - int(qty)
     p.sold_quantity = int(p.sold_quantity) + int(qty)
-
-

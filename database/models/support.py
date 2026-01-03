@@ -32,7 +32,9 @@ class SupportTicket(Base, TimestampMixin):
     __tablename__ = "support_tickets"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False, index=True)
+    user_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("users.id"), nullable=False, index=True
+    )
 
     # Relationship
     user: Mapped[User] = relationship("User", back_populates="support_tickets")
@@ -48,8 +50,12 @@ class SupportTicket(Base, TimestampMixin):
     # Legacy first message (kept for backward compatibility; new messages in support_messages)
     message: Mapped[str] = mapped_column(Text, nullable=False)
 
-    status: Mapped[TicketStatus] = mapped_column(default=TicketStatus.OPEN, nullable=False, index=True)
-    priority: Mapped[int] = mapped_column(Integer, default=3, nullable=False)  # 1=High, 2=Medium, 3=Low
+    status: Mapped[TicketStatus] = mapped_column(
+        default=TicketStatus.OPEN, nullable=False, index=True
+    )
+    priority: Mapped[int] = mapped_column(
+        Integer, default=3, nullable=False
+    )  # 1=High, 2=Medium, 3=Low
 
     # Admin assignment
     assigned_to_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True, index=True)
@@ -69,10 +75,13 @@ class SupportTicket(Base, TimestampMixin):
     @property
     def is_open(self) -> bool:
         """Check if ticket is open."""
-        return self.status in [TicketStatus.OPEN, TicketStatus.IN_PROGRESS, TicketStatus.WAITING_USER]
+        return self.status in [
+            TicketStatus.OPEN,
+            TicketStatus.IN_PROGRESS,
+            TicketStatus.WAITING_USER,
+        ]
 
     @property
     def is_resolved(self) -> bool:
         """Check if ticket is resolved."""
         return self.status in [TicketStatus.RESOLVED, TicketStatus.CLOSED]
-

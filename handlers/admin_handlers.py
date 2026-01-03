@@ -93,8 +93,7 @@ async def ban_user_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
         if success:
             await update.message.reply_text(
-                f"✅ کاربر `{target_user_id}` مسدود شد.\n"
-                f"📝 دلیل: {reason or 'ذکر نشده'}",
+                f"✅ کاربر `{target_user_id}` مسدود شد.\n📝 دلیل: {reason or 'ذکر نشده'}",
                 parse_mode="Markdown",
             )
             logger.info(f"Admin {admin_id} banned user {target_user_id}. Reason: {reason}")
@@ -258,16 +257,26 @@ async def user_info_command(update: Update, context: ContextTypes.DEFAULT_TYPE) 
             f"💵 کل خرید: {int(profile.total_spent):,} تومان"
         )
 
-        keyboard = InlineKeyboardMarkup([
+        keyboard = InlineKeyboardMarkup(
             [
-                InlineKeyboardButton("💰 افزایش موجودی", callback_data=f"admin_user_balance_{profile.id}"),
-                InlineKeyboardButton("🚫 مسدود کردن", callback_data=f"admin_user_ban_{profile.id}"),
-            ],
-            [
-                InlineKeyboardButton("🔧 سرویس‌ها", callback_data=f"admin_user_services_{profile.id}"),
-                InlineKeyboardButton("📜 تاریخچه", callback_data=f"admin_user_purchases_{profile.id}"),
-            ],
-        ])
+                [
+                    InlineKeyboardButton(
+                        "💰 افزایش موجودی", callback_data=f"admin_user_balance_{profile.id}"
+                    ),
+                    InlineKeyboardButton(
+                        "🚫 مسدود کردن", callback_data=f"admin_user_ban_{profile.id}"
+                    ),
+                ],
+                [
+                    InlineKeyboardButton(
+                        "🔧 سرویس‌ها", callback_data=f"admin_user_services_{profile.id}"
+                    ),
+                    InlineKeyboardButton(
+                        "📜 تاریخچه", callback_data=f"admin_user_purchases_{profile.id}"
+                    ),
+                ],
+            ]
+        )
 
         await update.message.reply_text(text, parse_mode="Markdown", reply_markup=keyboard)
 
@@ -294,10 +303,12 @@ async def live_stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
         analytics = await get_live_analytics(db)
         text = format_analytics_message(analytics, lang="fa")
 
-        keyboard = InlineKeyboardMarkup([
-            [InlineKeyboardButton("🔄 بروزرسانی", callback_data="admin_stats_refresh")],
-            [InlineKeyboardButton("📈 آمار تفصیلی", callback_data="admin_stats_detailed")],
-        ])
+        keyboard = InlineKeyboardMarkup(
+            [
+                [InlineKeyboardButton("🔄 بروزرسانی", callback_data="admin_stats_refresh")],
+                [InlineKeyboardButton("📈 آمار تفصیلی", callback_data="admin_stats_detailed")],
+            ]
+        )
 
         await loading_msg.edit_text(text, parse_mode="Markdown", reply_markup=keyboard)
 
@@ -323,9 +334,11 @@ async def server_health_command(update: Update, context: ContextTypes.DEFAULT_TY
         health_results = await check_all_panels_health(db)
         text = format_health_report(health_results, lang="fa")
 
-        keyboard = InlineKeyboardMarkup([
-            [InlineKeyboardButton("🔄 بررسی مجدد", callback_data="admin_health_refresh")],
-        ])
+        keyboard = InlineKeyboardMarkup(
+            [
+                [InlineKeyboardButton("🔄 بررسی مجدد", callback_data="admin_health_refresh")],
+            ]
+        )
 
         await loading_msg.edit_text(text, parse_mode="Markdown", reply_markup=keyboard)
 
@@ -347,9 +360,7 @@ async def broadcast_command(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     """
     if not update.message or not context.args:
         await update.message.reply_text(
-            "❌ استفاده صحیح:\n"
-            "`/broadcast <message>`\n\n"
-            "⚠️ این پیام به همه کاربران ارسال می‌شود.",
+            "❌ استفاده صحیح:\n`/broadcast <message>`\n\n⚠️ این پیام به همه کاربران ارسال می‌شود.",
             parse_mode="Markdown",
         )
         return
@@ -358,12 +369,16 @@ async def broadcast_command(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     admin_id = update.effective_user.id
 
     # Confirmation prompt
-    keyboard = InlineKeyboardMarkup([
+    keyboard = InlineKeyboardMarkup(
         [
-            InlineKeyboardButton("✅ تایید و ارسال", callback_data=f"broadcast_confirm:{message_text[:50]}"),
-            InlineKeyboardButton("❌ لغو", callback_data="broadcast_cancel"),
-        ],
-    ])
+            [
+                InlineKeyboardButton(
+                    "✅ تایید و ارسال", callback_data=f"broadcast_confirm:{message_text[:50]}"
+                ),
+                InlineKeyboardButton("❌ لغو", callback_data="broadcast_cancel"),
+            ],
+        ]
+    )
 
     await update.message.reply_text(
         f"📢 **پیش‌نمایش پیام:**\n\n{message_text}\n\n"
@@ -390,9 +405,7 @@ async def execute_broadcast(
     query = update.callback_query
     await query.answer()
 
-    progress_msg = await query.edit_message_text(
-        "📤 در حال ارسال پیام...\n⏳ لطفاً صبر کنید."
-    )
+    progress_msg = await query.edit_message_text("📤 در حال ارسال پیام...\n⏳ لطفاً صبر کنید.")
 
     async for db in get_db():
         result: BroadcastResult = await broadcast_message(
@@ -479,7 +492,9 @@ async def create_coupon_command(update: Update, context: ContextTypes.DEFAULT_TY
         )
 
         if success:
-            value_str = f"{int(value)}%" if discount_type == "percentage" else f"{int(value):,} تومان"
+            value_str = (
+                f"{int(value)}%" if discount_type == "percentage" else f"{int(value):,} تومان"
+            )
             max_str = f"{max_uses} بار" if max_uses else "نامحدود"
 
             await update.message.reply_text(
@@ -536,10 +551,16 @@ async def list_coupons_command(update: Update, context: ContextTypes.DEFAULT_TYP
         coupons = await list_coupons(db, include_inactive=False, include_expired=False)
         text = format_coupons_list(coupons, lang="fa")
 
-        keyboard = InlineKeyboardMarkup([
-            [InlineKeyboardButton("➕ کد جدید", callback_data="admin_coupon_create")],
-            [InlineKeyboardButton("📋 همه کدها (شامل غیرفعال)", callback_data="admin_coupons_all")],
-        ])
+        keyboard = InlineKeyboardMarkup(
+            [
+                [InlineKeyboardButton("➕ کد جدید", callback_data="admin_coupon_create")],
+                [
+                    InlineKeyboardButton(
+                        "📋 همه کدها (شامل غیرفعال)", callback_data="admin_coupons_all"
+                    )
+                ],
+            ]
+        )
 
         await update.message.reply_text(text, parse_mode="Markdown", reply_markup=keyboard)
 
@@ -583,9 +604,13 @@ async def search_users_command(update: Update, context: ContextTypes.DEFAULT_TYP
             username = user.username or f"User {user.id}"
             balance = int(user.balance or 0)
             text += f"• `{user.id}` - @{username} ({balance:,} تومان)\n"
-            keyboard_buttons.append([
-                InlineKeyboardButton(f"👤 {username}", callback_data=f"admin_user_detail_{user.id}")
-            ])
+            keyboard_buttons.append(
+                [
+                    InlineKeyboardButton(
+                        f"👤 {username}", callback_data=f"admin_user_detail_{user.id}"
+                    )
+                ]
+            )
 
         await update.message.reply_text(
             text,

@@ -37,6 +37,3 @@ def make_panel_username(*, telegram_username: str | None, user_id: int, suffix: 
             base = f"user_{int(user_id)}_{suffix}"[:128]
 
     return base
-
-
-

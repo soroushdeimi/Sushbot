@@ -51,6 +51,3 @@ def downgrade() -> None:
     op.execute("DROP INDEX IF EXISTS uq_wallet_transactions_ref_not_null;")
     op.execute("ALTER TABLE users DROP CONSTRAINT IF EXISTS fk_users_referred_by_id;")
     op.execute("DROP INDEX IF EXISTS ix_users_referred_by_id;")
-
-
-

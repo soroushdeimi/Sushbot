@@ -46,6 +46,7 @@ def retry_with_backoff(
             ...
         ```
     """
+
     def decorator(func: Callable[..., Awaitable[T]]) -> Callable[..., Awaitable[T]]:
         @wraps(func)
         async def wrapper(*args: Any, **kwargs: Any) -> T:
@@ -86,5 +87,5 @@ def retry_with_backoff(
             raise last_exception
 
         return wrapper
-    return decorator
 
+    return decorator

@@ -239,4 +239,3 @@ async def _create_marzban_panel(panel: Panel) -> VPNPanelInterface:
         )
 
     return service
-

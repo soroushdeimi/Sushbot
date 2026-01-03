@@ -54,4 +54,3 @@ async def login(credentials: LoginRequest, db: AsyncSession = Depends(get_db)) -
     # Generate token
     token = generate_token({"sub": str(user.id), "admin_level": admin.level.value})
     return TokenResponse(access_token=token)
-

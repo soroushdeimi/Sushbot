@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [main]
 
+# Required for uploading SARIF to GitHub Security tab
+permissions:
+  contents: read
+  security-events: write
+
 env:
   PYTHON_VERSION: "3.12"
   POSTGRES_USER: test
@@ -39,13 +44,16 @@ jobs:
         run: ruff format --check .
 
       - name: Bandit Security Scan
-        run: bandit -c pyproject.toml -r . -f sarif -o bandit.sarif || true
+        run: |
+          bandit -c pyproject.toml -r . -f sarif -o bandit.sarif --exit-zero
+          bandit -c pyproject.toml -r . -ll || true
 
       - name: Upload Bandit SARIF
         uses: github/codeql-action/upload-sarif@v3
-        if: always()
+        if: always() && hashFiles('bandit.sarif') != ''
         with:
           sarif_file: bandit.sarif
+        continue-on-error: true
 
   # =========================================================================
   # Stage 2: Type Check

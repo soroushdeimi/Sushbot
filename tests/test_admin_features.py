@@ -81,22 +81,24 @@ async def test_get_live_analytics_returns_snapshot(mock_db):
     from services.admin_panel import AnalyticsSnapshot, get_live_analytics
 
     # Mock database responses
-    mock_db.scalar = AsyncMock(side_effect=[
-        100,    # total_users
-        25,     # active_users_today
-        80,     # active_users_month
-        5,      # new_users_today
-        30,     # new_users_month
-        500000, # total_revenue
-        50000,  # revenue_today
-        150000, # revenue_week
-        300000, # revenue_month
-        45,     # active_services
-        10,     # expired_services
-        3,      # pending_payments
-        250000, # total_wallet_balance
-        1073741824 * 100,  # total_bandwidth (100 GB in bytes)
-    ])
+    mock_db.scalar = AsyncMock(
+        side_effect=[
+            100,  # total_users
+            25,  # active_users_today
+            80,  # active_users_month
+            5,  # new_users_today
+            30,  # new_users_month
+            500000,  # total_revenue
+            50000,  # revenue_today
+            150000,  # revenue_week
+            300000,  # revenue_month
+            45,  # active_services
+            10,  # expired_services
+            3,  # pending_payments
+            250000,  # total_wallet_balance
+            1073741824 * 100,  # total_bandwidth (100 GB in bytes)
+        ]
+    )
 
     analytics = await get_live_analytics(mock_db)
 
@@ -678,12 +680,14 @@ async def test_full_purchase_flow():
     mock_service.subscription_url = "https://sub.example.com/user_123456789_1"
 
     # Configure mock_db responses
-    mock_db.get = AsyncMock(side_effect=lambda model, id: {
-        (User, 123456789): mock_user,
-        (Product, 1): mock_product,
-        (Purchase, 1): mock_purchase,
-        (Payment, 1): mock_payment,
-    }.get((model, id)))
+    mock_db.get = AsyncMock(
+        side_effect=lambda model, id: {
+            (User, 123456789): mock_user,
+            (Product, 1): mock_product,
+            (Purchase, 1): mock_purchase,
+            (Payment, 1): mock_payment,
+        }.get((model, id))
+    )
 
     mock_db.add = MagicMock()
     mock_db.commit = AsyncMock()
@@ -710,10 +714,12 @@ async def test_full_purchase_flow():
     # 5. Provision service (mock the panel API)
     with patch("services.provisioning.PanelFactory.create_panel") as mock_factory:
         mock_panel_service = AsyncMock()
-        mock_panel_service.create_user = AsyncMock(return_value={
-            "username": "user_123456789_1",
-            "subscription_url": "https://sub.example.com/user_123456789_1",
-        })
+        mock_panel_service.create_user = AsyncMock(
+            return_value={
+                "username": "user_123456789_1",
+                "subscription_url": "https://sub.example.com/user_123456789_1",
+            }
+        )
         mock_factory.return_value = mock_panel_service
 
         # Simulated provisioning
@@ -827,9 +833,7 @@ async def test_user_info_command(mock_update, mock_context):
             )
 
             with patch("utils.security.check_admin_status") as mock_check:
-                mock_check.return_value = MagicMock(
-                    is_admin=True, level="admin", permissions=set()
-                )
+                mock_check.return_value = MagicMock(is_admin=True, level="admin", permissions=set())
 
                 await user_info_command(mock_update, mock_context)
 

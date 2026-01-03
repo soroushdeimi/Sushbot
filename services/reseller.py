@@ -25,8 +25,7 @@ async def get_reseller_discount(db: AsyncSession, *, user_id: int, product_id: i
 
     # Query reseller_pricing table
     res = await db.execute(
-        select(ResellerPricing.discount_percent)
-        .where(
+        select(ResellerPricing.discount_percent).where(
             ResellerPricing.reseller_id == user_id,
             ResellerPricing.product_id == product_id,
             ResellerPricing.is_active.is_(True),
@@ -38,7 +37,9 @@ async def get_reseller_discount(db: AsyncSession, *, user_id: int, product_id: i
     return pricing if pricing is not None else 10
 
 
-async def calculate_reseller_price(db: AsyncSession, *, user_id: int, product_id: int, base_price: int) -> int:
+async def calculate_reseller_price(
+    db: AsyncSession, *, user_id: int, product_id: int, base_price: int
+) -> int:
     """Calculate final price for reseller (with discount)."""
     discount_pct = await get_reseller_discount(db, user_id=user_id, product_id=product_id)
     if discount_pct <= 0:
@@ -47,7 +48,9 @@ async def calculate_reseller_price(db: AsyncSession, *, user_id: int, product_id
     return max(0, base_price - discount_amount)
 
 
-async def check_reseller_quota(db: AsyncSession, *, user_id: int, product_id: int, quantity: int = 1) -> tuple[bool, str | None]:
+async def check_reseller_quota(
+    db: AsyncSession, *, user_id: int, product_id: int, quantity: int = 1
+) -> tuple[bool, str | None]:
     """Check if reseller has quota for bulk purchase."""
     if not is_enabled("reseller"):
         return False, "Reseller feature disabled"
@@ -58,8 +61,7 @@ async def check_reseller_quota(db: AsyncSession, *, user_id: int, product_id: in
 
     # Check product-specific quota first, then global
     res = await db.execute(
-        select(ResellerQuota)
-        .where(
+        select(ResellerQuota).where(
             ResellerQuota.reseller_id == user_id,
             ResellerQuota.product_id == product_id,
         )
@@ -69,8 +71,7 @@ async def check_reseller_quota(db: AsyncSession, *, user_id: int, product_id: in
     # If no product-specific quota, check global quota
     if not quota:
         res = await db.execute(
-            select(ResellerQuota)
-            .where(
+            select(ResellerQuota).where(
                 ResellerQuota.reseller_id == user_id,
                 ResellerQuota.product_id.is_(None),
             )
@@ -90,7 +91,10 @@ async def check_reseller_quota(db: AsyncSession, *, user_id: int, product_id: in
 
     # Check quota
     if quota.current_month_usage + quantity > quota.monthly_limit:
-        return False, f"Monthly quota exceeded. Limit: {quota.monthly_limit}, Used: {quota.current_month_usage}, Requested: {quantity}"
+        return (
+            False,
+            f"Monthly quota exceeded. Limit: {quota.monthly_limit}, Used: {quota.current_month_usage}, Requested: {quantity}",
+        )
 
     return True, None
 
@@ -107,7 +111,9 @@ async def create_bulk_purchase(
     if not is_enabled("bulk_purchase"):
         raise ValueError("Bulk purchase feature disabled")
 
-    ok, err = await check_reseller_quota(db, user_id=user_id, product_id=product_id, quantity=quantity)
+    ok, err = await check_reseller_quota(
+        db, user_id=user_id, product_id=product_id, quantity=quantity
+    )
     if not ok:
         raise ValueError(err or "Quota check failed")
 
@@ -121,7 +127,9 @@ async def create_bulk_purchase(
 
     # Calculate price (with reseller discount if applicable)
     base_price = int(product.price)
-    reseller_price = await calculate_reseller_price(db, user_id=user_id, product_id=product_id, base_price=base_price)
+    reseller_price = await calculate_reseller_price(
+        db, user_id=user_id, product_id=product_id, base_price=base_price
+    )
 
     # Apply discount code if provided
     discount_code_obj = None
@@ -184,8 +192,7 @@ async def create_bulk_purchase(
     if user.role == UserRole.RESELLER:
         # Find quota (product-specific or global)
         res = await db.execute(
-            select(ResellerQuota)
-            .where(
+            select(ResellerQuota).where(
                 ResellerQuota.reseller_id == user_id,
                 ResellerQuota.product_id == product_id,
             )
@@ -194,8 +201,7 @@ async def create_bulk_purchase(
 
         if not quota:
             res = await db.execute(
-                select(ResellerQuota)
-                .where(
+                select(ResellerQuota).where(
                     ResellerQuota.reseller_id == user_id,
                     ResellerQuota.product_id.is_(None),
                 )
@@ -240,4 +246,3 @@ async def get_reseller_stats(db: AsyncSession, *, user_id: int) -> dict[str, Any
         "referrals": referrals,
         "balance": int(user.balance),
     }
-

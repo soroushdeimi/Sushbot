@@ -46,7 +46,11 @@ async def fulfill_purchase(db: AsyncSession, *, purchase: Purchase) -> Service |
     if purchase.purchase_type == PurchaseType.WALLET_TOPUP:
         # Idempotent wallet credit (keyed by purchase id)
         ref = f"topup_purchase_{purchase.id}"
-        res = await db.execute(select(WalletTransaction).where(WalletTransaction.user_id == purchase.user_id, WalletTransaction.ref == ref))
+        res = await db.execute(
+            select(WalletTransaction).where(
+                WalletTransaction.user_id == purchase.user_id, WalletTransaction.ref == ref
+            )
+        )
         existing = res.scalars().first()
         if existing:
             return None
@@ -62,7 +66,9 @@ async def fulfill_purchase(db: AsyncSession, *, purchase: Purchase) -> Service |
             ref=ref,
             note=f"Wallet top-up from purchase_id={purchase.id}",
         )
-        logger.info(f"Wallet topup credited user_id={purchase.user_id} amount={amt} purchase_id={purchase.id}")
+        logger.info(
+            f"Wallet topup credited user_id={purchase.user_id} amount={amt} purchase_id={purchase.id}"
+        )
         return None
 
     if purchase.purchase_type == PurchaseType.NEW or not purchase.service_id:
@@ -87,21 +93,34 @@ async def fulfill_purchase(db: AsyncSession, *, purchase: Purchase) -> Service |
             base = svc.expiry_date if svc.expiry_date and svc.expiry_date > now else now
             new_exp = base + timedelta(days=int(purchase.duration_days))
             try:
-                await panel_service.renew_user(username=svc.client_email, expire_ts=int(new_exp.timestamp()))
+                await panel_service.renew_user(
+                    username=svc.client_email, expire_ts=int(new_exp.timestamp())
+                )
                 svc.expiry_date = new_exp
                 await db.commit()
-                logger.info(f"Renewed service_id={svc.id} to {new_exp.isoformat()} by purchase_id={purchase.id}")
+                logger.info(
+                    f"Renewed service_id={svc.id} to {new_exp.isoformat()} by purchase_id={purchase.id}"
+                )
             except PanelConnectionError as e:
                 await db.rollback()
-                logger.error(f"Cannot connect to panel {panel.name} to renew service_id={svc.id} for purchase_id={purchase.id}: {e}")
-                raise ValueError(f"Cannot connect to panel {panel.name}. Please check panel configuration.") from e
+                logger.error(
+                    f"Cannot connect to panel {panel.name} to renew service_id={svc.id} for purchase_id={purchase.id}: {e}"
+                )
+                raise ValueError(
+                    f"Cannot connect to panel {panel.name}. Please check panel configuration."
+                ) from e
             except (PanelError, PanelUserNotFoundError) as e:
                 await db.rollback()
-                logger.error(f"Panel error renewing service_id={svc.id} (user={svc.client_email}) for purchase_id={purchase.id}: {e}")
+                logger.error(
+                    f"Panel error renewing service_id={svc.id} (user={svc.client_email}) for purchase_id={purchase.id}: {e}"
+                )
                 raise ValueError(f"Failed to renew service on panel {panel.name}: {e}") from e
             except Exception as e:
                 await db.rollback()
-                logger.error(f"Unexpected error renewing service_id={svc.id} for purchase_id={purchase.id}: {e}", exc_info=True)
+                logger.error(
+                    f"Unexpected error renewing service_id={svc.id} for purchase_id={purchase.id}: {e}",
+                    exc_info=True,
+                )
                 raise
             return svc
 
@@ -109,29 +128,44 @@ async def fulfill_purchase(db: AsyncSession, *, purchase: Purchase) -> Service |
             add_gb = int(purchase.traffic_gb)
             if add_gb > 0 and not svc.is_unlimited:
                 try:
-                    await panel_service.add_traffic(username=svc.client_email, add_bytes=add_gb * (1024**3))
+                    await panel_service.add_traffic(
+                        username=svc.client_email, add_bytes=add_gb * (1024**3)
+                    )
                     svc.total_traffic_gb = int(svc.total_traffic_gb or 0) + add_gb
                     if svc.remaining_traffic_gb is not None:
                         svc.remaining_traffic_gb = float(svc.remaining_traffic_gb) + float(add_gb)
                     await db.commit()
-                    logger.info(f"Added traffic to service_id={svc.id} +{add_gb}GB purchase_id={purchase.id}")
+                    logger.info(
+                        f"Added traffic to service_id={svc.id} +{add_gb}GB purchase_id={purchase.id}"
+                    )
                 except PanelConnectionError as e:
                     await db.rollback()
-                    logger.error(f"Cannot connect to panel {panel.name} to add traffic to service_id={svc.id} for purchase_id={purchase.id}: {e}")
-                    raise ValueError(f"Cannot connect to panel {panel.name}. Please check panel configuration.") from e
+                    logger.error(
+                        f"Cannot connect to panel {panel.name} to add traffic to service_id={svc.id} for purchase_id={purchase.id}: {e}"
+                    )
+                    raise ValueError(
+                        f"Cannot connect to panel {panel.name}. Please check panel configuration."
+                    ) from e
                 except (PanelError, PanelUserNotFoundError) as e:
                     await db.rollback()
-                    logger.error(f"Panel error adding traffic to service_id={svc.id} (user={svc.client_email}) for purchase_id={purchase.id}: {e}")
+                    logger.error(
+                        f"Panel error adding traffic to service_id={svc.id} (user={svc.client_email}) for purchase_id={purchase.id}: {e}"
+                    )
                     raise ValueError(f"Failed to add traffic on panel {panel.name}: {e}") from e
                 except Exception as e:
                     await db.rollback()
-                    logger.error(f"Unexpected error adding traffic to service_id={svc.id} for purchase_id={purchase.id}: {e}", exc_info=True)
+                    logger.error(
+                        f"Unexpected error adding traffic to service_id={svc.id} for purchase_id={purchase.id}: {e}",
+                        exc_info=True,
+                    )
                     raise
             return svc
 
         return svc
     except Exception as e:
-        logger.error(f"Unexpected error during fulfillment for purchase {purchase.id}: {e}", exc_info=True)
+        logger.error(
+            f"Unexpected error during fulfillment for purchase {purchase.id}: {e}", exc_info=True
+        )
         raise
     finally:
         if panel_service:
@@ -139,6 +173,3 @@ async def fulfill_purchase(db: AsyncSession, *, purchase: Purchase) -> Service |
                 await panel_service.close()
             except Exception as e:
                 logger.warning(f"Error closing panel service for panel {panel.name}: {e}")
-
-
-

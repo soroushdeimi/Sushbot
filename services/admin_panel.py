@@ -148,79 +148,101 @@ async def get_live_analytics(db: AsyncSession) -> AnalyticsSnapshot:
     # User statistics
     total_users = await db.scalar(select(func.count(User.id))) or 0
 
-    active_users_today = await db.scalar(
-        select(func.count(User.id)).where(User.updated_at >= today_start)
-    ) or 0
+    active_users_today = (
+        await db.scalar(select(func.count(User.id)).where(User.updated_at >= today_start)) or 0
+    )
 
-    active_users_month = await db.scalar(
-        select(func.count(User.id)).where(User.updated_at >= month_start)
-    ) or 0
+    active_users_month = (
+        await db.scalar(select(func.count(User.id)).where(User.updated_at >= month_start)) or 0
+    )
 
-    new_users_today = await db.scalar(
-        select(func.count(User.id)).where(User.created_at >= today_start)
-    ) or 0
+    new_users_today = (
+        await db.scalar(select(func.count(User.id)).where(User.created_at >= today_start)) or 0
+    )
 
-    new_users_month = await db.scalar(
-        select(func.count(User.id)).where(User.created_at >= month_start)
-    ) or 0
+    new_users_month = (
+        await db.scalar(select(func.count(User.id)).where(User.created_at >= month_start)) or 0
+    )
 
     # Revenue statistics
-    total_revenue = await db.scalar(
-        select(func.sum(Purchase.final_amount)).where(
-            Purchase.status == PurchaseStatus.COMPLETED
-        )
-    ) or 0.0
-
-    revenue_today = await db.scalar(
-        select(func.sum(Purchase.final_amount)).where(
-            and_(
-                Purchase.status == PurchaseStatus.COMPLETED,
-                Purchase.created_at >= today_start,
+    total_revenue = (
+        await db.scalar(
+            select(func.sum(Purchase.final_amount)).where(
+                Purchase.status == PurchaseStatus.COMPLETED
             )
         )
-    ) or 0.0
+        or 0.0
+    )
 
-    revenue_week = await db.scalar(
-        select(func.sum(Purchase.final_amount)).where(
-            and_(
-                Purchase.status == PurchaseStatus.COMPLETED,
-                Purchase.created_at >= week_start,
+    revenue_today = (
+        await db.scalar(
+            select(func.sum(Purchase.final_amount)).where(
+                and_(
+                    Purchase.status == PurchaseStatus.COMPLETED,
+                    Purchase.created_at >= today_start,
+                )
             )
         )
-    ) or 0.0
+        or 0.0
+    )
 
-    revenue_month = await db.scalar(
-        select(func.sum(Purchase.final_amount)).where(
-            and_(
-                Purchase.status == PurchaseStatus.COMPLETED,
-                Purchase.created_at >= month_start,
+    revenue_week = (
+        await db.scalar(
+            select(func.sum(Purchase.final_amount)).where(
+                and_(
+                    Purchase.status == PurchaseStatus.COMPLETED,
+                    Purchase.created_at >= week_start,
+                )
             )
         )
-    ) or 0.0
+        or 0.0
+    )
+
+    revenue_month = (
+        await db.scalar(
+            select(func.sum(Purchase.final_amount)).where(
+                and_(
+                    Purchase.status == PurchaseStatus.COMPLETED,
+                    Purchase.created_at >= month_start,
+                )
+            )
+        )
+        or 0.0
+    )
 
     # Service statistics
-    active_services = await db.scalar(
-        select(func.count(Service.id)).where(Service.status == ServiceStatus.ACTIVE)
-    ) or 0
+    active_services = (
+        await db.scalar(
+            select(func.count(Service.id)).where(Service.status == ServiceStatus.ACTIVE)
+        )
+        or 0
+    )
 
-    expired_services = await db.scalar(
-        select(func.count(Service.id)).where(Service.status == ServiceStatus.EXPIRED)
-    ) or 0
+    expired_services = (
+        await db.scalar(
+            select(func.count(Service.id)).where(Service.status == ServiceStatus.EXPIRED)
+        )
+        or 0
+    )
 
     # Pending payments
-    pending_payments = await db.scalar(
-        select(func.count(Payment.id)).where(Payment.status == PaymentStatus.PENDING)
-    ) or 0
+    pending_payments = (
+        await db.scalar(
+            select(func.count(Payment.id)).where(Payment.status == PaymentStatus.PENDING)
+        )
+        or 0
+    )
 
     # Wallet balance
     total_wallet_balance = await db.scalar(select(func.sum(User.balance))) or 0.0
 
     # Bandwidth usage (from services - already in GB)
-    total_bandwidth_gb = await db.scalar(
-        select(func.sum(Service.used_traffic_gb)).where(
-            Service.used_traffic_gb.isnot(None)
+    total_bandwidth_gb = (
+        await db.scalar(
+            select(func.sum(Service.used_traffic_gb)).where(Service.used_traffic_gb.isnot(None))
         )
-    ) or 0.0
+        or 0.0
+    )
 
     return AnalyticsSnapshot(
         total_users=total_users,
@@ -329,10 +351,7 @@ async def search_users(
     search_conditions.append(User.last_name.ilike(f"%{query}%"))
 
     result = await db.execute(
-        select(User)
-        .where(or_(*search_conditions))
-        .order_by(User.created_at.desc())
-        .limit(limit)
+        select(User).where(or_(*search_conditions)).order_by(User.created_at.desc()).limit(limit)
     )
     return list(result.scalars().all())
 
@@ -353,24 +372,27 @@ async def get_user_profile(db: AsyncSession, user_id: int) -> UserProfile | None
         return None
 
     # Count services
-    services_count = await db.scalar(
-        select(func.count(Service.id)).where(Service.user_id == user_id)
-    ) or 0
+    services_count = (
+        await db.scalar(select(func.count(Service.id)).where(Service.user_id == user_id)) or 0
+    )
 
     # Count purchases
-    purchases_count = await db.scalar(
-        select(func.count(Purchase.id)).where(Purchase.user_id == user_id)
-    ) or 0
+    purchases_count = (
+        await db.scalar(select(func.count(Purchase.id)).where(Purchase.user_id == user_id)) or 0
+    )
 
     # Total spent
-    total_spent = await db.scalar(
-        select(func.sum(Purchase.final_amount)).where(
-            and_(
-                Purchase.user_id == user_id,
-                Purchase.status == PurchaseStatus.COMPLETED,
+    total_spent = (
+        await db.scalar(
+            select(func.sum(Purchase.final_amount)).where(
+                and_(
+                    Purchase.user_id == user_id,
+                    Purchase.status == PurchaseStatus.COMPLETED,
+                )
             )
         )
-    ) or 0.0
+        or 0.0
+    )
 
     return UserProfile(
         id=user.id,
@@ -586,9 +608,7 @@ async def check_all_panels_health(db: AsyncSession) -> list[PanelHealth]:
     Returns:
         List of PanelHealth for all panels
     """
-    result = await db.execute(
-        select(Panel).where(Panel.status == PanelStatus.ACTIVE)
-    )
+    result = await db.execute(select(Panel).where(Panel.status == PanelStatus.ACTIVE))
     panels = result.scalars().all()
 
     # Check all panels concurrently
@@ -666,9 +686,9 @@ async def broadcast_message(
 
     if only_active:
         # Only users with at least one active service
-        active_user_ids = select(Service.user_id).where(
-            Service.status == ServiceStatus.ACTIVE
-        ).distinct()
+        active_user_ids = (
+            select(Service.user_id).where(Service.status == ServiceStatus.ACTIVE).distinct()
+        )
         query = query.where(User.id.in_(active_user_ids))
 
     result = await db.execute(query)
@@ -751,9 +771,7 @@ async def create_coupon(
         Tuple of (success, message, coupon or None)
     """
     # Validate code uniqueness
-    existing = await db.scalar(
-        select(DiscountCode).where(DiscountCode.code == code.upper())
-    )
+    existing = await db.scalar(select(DiscountCode).where(DiscountCode.code == code.upper()))
     if existing:
         return False, f"Coupon code '{code}' already exists", None
 
@@ -800,9 +818,7 @@ async def delete_coupon(
     Returns:
         Tuple of (success, message)
     """
-    coupon = await db.scalar(
-        select(DiscountCode).where(DiscountCode.code == code.upper())
-    )
+    coupon = await db.scalar(select(DiscountCode).where(DiscountCode.code == code.upper()))
     if not coupon:
         return False, f"Coupon '{code}' not found"
 
@@ -829,9 +845,7 @@ async def toggle_coupon(
     Returns:
         Tuple of (success, message)
     """
-    coupon = await db.scalar(
-        select(DiscountCode).where(DiscountCode.code == code.upper())
-    )
+    coupon = await db.scalar(select(DiscountCode).where(DiscountCode.code == code.upper()))
     if not coupon:
         return False, f"Coupon '{code}' not found"
 
@@ -902,7 +916,11 @@ def format_coupons_list(coupons: list[CouponInfo], lang: str = "fa") -> str:
 
     for c in coupons:
         status = "✅" if c.is_active else "❌"
-        discount = f"{int(c.discount_value)}%" if c.discount_type == "percentage" else f"{int(c.discount_value):,}"
+        discount = (
+            f"{int(c.discount_value)}%"
+            if c.discount_type == "percentage"
+            else f"{int(c.discount_value):,}"
+        )
 
         line = f"{status} `{c.code}` - {discount}\n"
 

@@ -65,7 +65,9 @@ async def provision_purchase(db: AsyncSession, *, purchase: Purchase) -> Service
 
     u = await db.get(User, purchase.user_id)
     tg_un = u.username if u else None
-    username = make_panel_username(telegram_username=tg_un, user_id=purchase.user_id, suffix=str(product.id))
+    username = make_panel_username(
+        telegram_username=tg_un, user_id=purchase.user_id, suffix=str(product.id)
+    )
 
     # Get panel and create service using factory
     panel = await db.get(Panel, product.panel_id)
@@ -100,10 +102,16 @@ async def provision_purchase(db: AsyncSession, *, purchase: Purchase) -> Service
                 protocol=product.protocol,
             )
         except PanelConnectionError as e:
-            logger.error(f"Failed to connect to panel {panel.name} (id={panel.id}) for purchase {purchase.id}: {e}")
-            raise ValueError(f"Cannot connect to panel {panel.name}. Please check panel configuration.") from e
+            logger.error(
+                f"Failed to connect to panel {panel.name} (id={panel.id}) for purchase {purchase.id}: {e}"
+            )
+            raise ValueError(
+                f"Cannot connect to panel {panel.name}. Please check panel configuration."
+            ) from e
         except PanelError as e:
-            logger.error(f"Panel error creating user {username} on panel {panel.name} for purchase {purchase.id}: {e}")
+            logger.error(
+                f"Panel error creating user {username} on panel {panel.name} for purchase {purchase.id}: {e}"
+            )
             raise ValueError(f"Failed to create user on panel {panel.name}: {e}") from e
 
         # Generate config link
@@ -113,7 +121,9 @@ async def provision_purchase(db: AsyncSession, *, purchase: Purchase) -> Service
                 protocol=product.protocol,
             )
         except (PanelError, PanelUserNotFoundError) as e:
-            logger.error(f"Failed to generate config link for user {username} on panel {panel.name}: {e}")
+            logger.error(
+                f"Failed to generate config link for user {username} on panel {panel.name}: {e}"
+            )
             # Continue without config_link - service can still be created
             config_link = None
 
@@ -133,7 +143,9 @@ async def provision_purchase(db: AsyncSession, *, purchase: Purchase) -> Service
             "panel_id": product.panel_id,
         }
     except Exception as e:
-        logger.error(f"Unexpected error during provisioning for purchase {purchase.id}: {e}", exc_info=True)
+        logger.error(
+            f"Unexpected error during provisioning for purchase {purchase.id}: {e}", exc_info=True
+        )
         raise
     finally:
         if panel_service:
@@ -171,8 +183,10 @@ async def provision_purchase(db: AsyncSession, *, purchase: Purchase) -> Service
     # Inventory: consume reserved unit on successful provisioning (before commit).
     if product.stock_quantity is not None:
         from config.features import is_enabled
+
         if is_enabled("inventory"):
             from services.inventory import consume_stock
+
             await consume_stock(db, product_id=product.id, qty=1)
 
     # Update purchase
@@ -192,5 +206,3 @@ async def provision_purchase(db: AsyncSession, *, purchase: Purchase) -> Service
 
     logger.info(f"Provisioned service_id={svc.id} for purchase_id={purchase.id}")
     return svc
-
-

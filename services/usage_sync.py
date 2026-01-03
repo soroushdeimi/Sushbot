@@ -46,7 +46,9 @@ async def job_sync_usage(context: ContextTypes.DEFAULT_TYPE) -> None:
         for panel_id, panel_services in services_by_panel.items():
             panel = await db.get(Panel, panel_id)
             if not panel:
-                logger.warning(f"Panel {panel_id} not found, skipping {len(panel_services)} services")
+                logger.warning(
+                    f"Panel {panel_id} not found, skipping {len(panel_services)} services"
+                )
                 continue
 
             panel_service = None
@@ -76,7 +78,9 @@ async def job_sync_usage(context: ContextTypes.DEFAULT_TYPE) -> None:
 
                         # Update expiry date
                         if user_stats.expire_ts:
-                            svc.expiry_date = datetime.fromtimestamp(user_stats.expire_ts, tz=UTC).replace(tzinfo=None)
+                            svc.expiry_date = datetime.fromtimestamp(
+                                user_stats.expire_ts, tz=UTC
+                            ).replace(tzinfo=None)
 
                         # Update status
                         status = user_stats.status.lower()
@@ -86,7 +90,9 @@ async def job_sync_usage(context: ContextTypes.DEFAULT_TYPE) -> None:
                             svc.status = ServiceStatus.SUSPENDED
 
                     except Exception as e:
-                        logger.warning(f"Usage sync failed for service_id={svc.id} user={svc.client_email}: {e}")
+                        logger.warning(
+                            f"Usage sync failed for service_id={svc.id} user={svc.client_email}: {e}"
+                        )
                         continue
 
             except Exception as e:
@@ -96,6 +102,3 @@ async def job_sync_usage(context: ContextTypes.DEFAULT_TYPE) -> None:
                     await panel_service.close()
 
         await db.commit()
-
-
-

@@ -37,7 +37,12 @@ async def list_services(
     """List all services."""
     res = await db.execute(select(Service).order_by(Service.id.desc()).limit(limit).offset(offset))
     services = list(res.scalars().all())
-    await audit(db, actor_user_id=cur.user.id, action="api.services.list", meta={"limit": limit, "offset": offset})
+    await audit(
+        db,
+        actor_user_id=cur.user.id,
+        action="api.services.list",
+        meta={"limit": limit, "offset": offset},
+    )
     return [
         ServiceOut(
             id=int(s.id),
@@ -48,8 +53,9 @@ async def list_services(
             client_email=str(s.client_email),
             expiry_date=s.expiry_date.isoformat() if s.expiry_date else None,
             is_unlimited=bool(s.is_unlimited),
-            remaining_traffic_gb=float(s.remaining_traffic_gb) if s.remaining_traffic_gb is not None else None,
+            remaining_traffic_gb=float(s.remaining_traffic_gb)
+            if s.remaining_traffic_gb is not None
+            else None,
         )
         for s in services
     ]
-

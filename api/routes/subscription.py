@@ -24,6 +24,3 @@ async def sub(token: str) -> Response:
             raise HTTPException(status_code=404, detail="not found")
         payload = build_subscription_payload([svc.config_link])
         return Response(content=payload, media_type="text/plain; charset=utf-8")
-
-
-

@@ -31,7 +31,9 @@ def build_referral_link(*, bot_username: str, referral_code: str) -> str:
     return f"https://t.me/{un}?start=ref_{referral_code}"
 
 
-async def try_bind_referral(db: AsyncSession, *, user_id: int, referral_payload: str | None) -> tuple[bool, str | None]:
+async def try_bind_referral(
+    db: AsyncSession, *, user_id: int, referral_payload: str | None
+) -> tuple[bool, str | None]:
     """
     Bind referred_by_id once, only if user has no referrer and no completed purchases.
     Returns (bound, message_for_user).
@@ -76,7 +78,9 @@ def _calc_commission(*, final_amount: int) -> int:
     return int((final_amount * pct) // 100) + fixed
 
 
-async def award_referral_commission_for_purchase(db: AsyncSession, *, purchase: Purchase) -> tuple[int, int | None]:
+async def award_referral_commission_for_purchase(
+    db: AsyncSession, *, purchase: Purchase
+) -> tuple[int, int | None]:
     """
     Award commission to referrer if eligible.
     Returns (amount_awarded, referrer_user_id).
@@ -125,6 +129,3 @@ async def award_referral_commission_for_purchase(db: AsyncSession, *, purchase: 
         note=f"Affiliate reward for purchase_id={purchase.id} (buyer_id={buyer.id})",
     )
     return amt, referrer_id
-
-
-

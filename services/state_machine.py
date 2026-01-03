@@ -26,6 +26,7 @@ class State:
 def _utcnow() -> datetime:
     return datetime.now(UTC)
 
+
 _STEP_RE = re.compile(r"^[a-z0-9][a-z0-9_.-]{0,127}$")
 
 
@@ -124,7 +125,7 @@ async def try_lock(user_id: int, *, seconds: int, reason: str) -> bool:
         st.locked_until = until
         st.lock_reason = reason
         await db.commit()
-        logger.debug(f"Locked user_state user_id={user_id} reason={reason} until={until.isoformat()}")
+        logger.debug(
+            f"Locked user_state user_id={user_id} reason={reason} until={until.isoformat()}"
+        )
         return True
-
-

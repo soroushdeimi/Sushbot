@@ -19,9 +19,13 @@ class UserInfo(BaseModel):
     user_id: int | None = Field(default=None, description="Internal panel user ID")
     status: str = Field(..., description="User status (active, disabled, expired, etc.)")
     expire_ts: int | None = Field(default=None, description="Expiration timestamp (Unix)")
-    data_limit_bytes: int | None = Field(default=None, description="Data limit in bytes (None = unlimited)")
+    data_limit_bytes: int | None = Field(
+        default=None, description="Data limit in bytes (None = unlimited)"
+    )
     used_traffic_bytes: int = Field(default=0, description="Used traffic in bytes")
-    proxy_settings: dict[str, Any] | None = Field(default=None, description="Protocol-specific proxy settings")
+    proxy_settings: dict[str, Any] | None = Field(
+        default=None, description="Protocol-specific proxy settings"
+    )
 
 
 class UserStats(BaseModel):
@@ -30,9 +34,13 @@ class UserStats(BaseModel):
     username: str = Field(..., description="Username/email of the user")
     status: str = Field(..., description="User status")
     used_traffic_bytes: int = Field(default=0, description="Used traffic in bytes")
-    data_limit_bytes: int | None = Field(default=None, description="Data limit in bytes (None = unlimited)")
+    data_limit_bytes: int | None = Field(
+        default=None, description="Data limit in bytes (None = unlimited)"
+    )
     expire_ts: int | None = Field(default=None, description="Expiration timestamp (Unix)")
-    proxy_settings: dict[str, Any] | None = Field(default=None, description="Protocol-specific proxy settings")
+    proxy_settings: dict[str, Any] | None = Field(
+        default=None, description="Protocol-specific proxy settings"
+    )
 
 
 class PanelSystemStats(BaseModel):
@@ -159,7 +167,9 @@ class VPNPanelInterface(ABC):
         pass
 
     @abstractmethod
-    async def rotate_credentials(self, *, username: str, protocol: str = "vless", flow: str = "xtls-rprx-vision") -> dict[str, Any]:
+    async def rotate_credentials(
+        self, *, username: str, protocol: str = "vless", flow: str = "xtls-rprx-vision"
+    ) -> dict[str, Any]:
         """
         Rotate user's proxy credentials (UUIDs, passwords, etc.).
 
@@ -259,4 +269,3 @@ class VPNPanelInterface(ABC):
         Should be called when done with the panel instance.
         """
         pass
-

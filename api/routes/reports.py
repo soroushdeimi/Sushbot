@@ -99,4 +99,3 @@ async def get_revenue_breakdown_endpoint(
     if not is_enabled("reporting"):
         return {"error": "Reporting feature disabled"}
     return await get_revenue_breakdown(db, days=days)
-

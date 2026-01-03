@@ -23,6 +23,3 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     op.execute("DROP INDEX IF EXISTS uq_payments_gateway_txid_partial;")
-
-
-

@@ -39,7 +39,9 @@ async def _require_support_admin(db: AsyncSession, telegram_user_id: int) -> Adm
     u = await db.get(User, telegram_user_id)
     if not u or u.role != UserRole.ADMIN:
         return None
-    res = await db.execute(select(Admin).where(Admin.user_id == telegram_user_id, Admin.is_active.is_(True)))
+    res = await db.execute(
+        select(Admin).where(Admin.user_id == telegram_user_id, Admin.is_active.is_(True))
+    )
     a = res.scalars().first()
     if not a or not a.can_manage_support:
         return None
@@ -93,7 +95,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
         # Optional affiliate binding via /start payload
         try:
-            payload = (context.args[0] if getattr(context, "args", None) else None)
+            payload = context.args[0] if getattr(context, "args", None) else None
         except (IndexError, AttributeError, TypeError):
             # Expected errors when args is None or empty
             payload = None
@@ -193,7 +195,9 @@ async def services_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
         # Get user services
         res = await db.execute(
-            select(Service).where(Service.user_id == db_user.id, Service.status == ServiceStatus.ACTIVE)
+            select(Service).where(
+                Service.user_id == db_user.id, Service.status == ServiceStatus.ACTIVE
+            )
         )
         services = list(res.scalars().all())
 
@@ -208,7 +212,11 @@ async def services_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         services_text = "📦 Your Active Services:\n\n"
         for service in services:
             days = service.days_remaining or "Unlimited"
-            traffic = f"{service.used_traffic_gb:.2f}GB / {service.total_traffic_gb}GB" if service.total_traffic_gb > 0 else "Unlimited"
+            traffic = (
+                f"{service.used_traffic_gb:.2f}GB / {service.total_traffic_gb}GB"
+                if service.total_traffic_gb > 0
+                else "Unlimited"
+            )
             services_text += (
                 f"🔹 Service #{service.id}\n"
                 f"   Protocol: {service.protocol.upper()}\n"
@@ -226,7 +234,9 @@ async def trial_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         return
 
     if not await try_lock(user.id, seconds=30, reason="trial.create"):
-        await update.message.reply_text("⏳ درخواست قبلی هنوز در حال پردازش است. چند ثانیه دیگر دوباره تلاش کنید.")
+        await update.message.reply_text(
+            "⏳ درخواست قبلی هنوز در حال پردازش است. چند ثانیه دیگر دوباره تلاش کنید."
+        )
         return
 
     try:
@@ -237,6 +247,7 @@ async def trial_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
                 return
 
             from services.access_control import ensure_access
+
             guard = await ensure_access(update, context, db_user=db_user, purpose="trial")
             if not guard.ok:
                 await db.commit()
@@ -258,9 +269,13 @@ async def trial_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
                 raise
 
             await update.message.reply_text(
-                t("trial_created", db_user, lang).format(days=trial.duration_days, gb=trial.traffic_gb, service_id=service.id)
+                t("trial_created", db_user, lang).format(
+                    days=trial.duration_days, gb=trial.traffic_gb, service_id=service.id
+                )
             )
-            await update.message.reply_text(f"🔗 {t('config', db_user, lang)}:\n{trial.config_link}")
+            await update.message.reply_text(
+                f"🔗 {t('config', db_user, lang)}:\n{trial.config_link}"
+            )
     finally:
         await release_lock(user.id)
 
@@ -269,11 +284,7 @@ async def support_command(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     """Handle /support command."""
     from bot.keyboards import support_keyboard
 
-    support_text = (
-        "💬 Support\n\n"
-        "How can we help you?\n\n"
-        "Choose an option:"
-    )
+    support_text = "💬 Support\n\nHow can we help you?\n\nChoose an option:"
     await update.message.reply_text(support_text, reply_markup=support_keyboard())
 
 
@@ -288,9 +299,14 @@ async def tickets_command(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             await update.message.reply_text("Admin only.")
             return
         from database.models import SupportTicket, TicketStatus
+
         res = await db.execute(
             select(SupportTicket)
-            .where(SupportTicket.status.in_([TicketStatus.OPEN, TicketStatus.IN_PROGRESS, TicketStatus.WAITING_USER]))
+            .where(
+                SupportTicket.status.in_(
+                    [TicketStatus.OPEN, TicketStatus.IN_PROGRESS, TicketStatus.WAITING_USER]
+                )
+            )
             .order_by(SupportTicket.id.desc())
             .limit(15)
         )
@@ -320,7 +336,10 @@ async def topen_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             await update.message.reply_text("Admin only.")
             return
         from database.models import SupportMessage, SupportSender, SupportTicket
-        res = await db.execute(select(SupportTicket).where(SupportTicket.ticket_number == tn).limit(1))
+
+        res = await db.execute(
+            select(SupportTicket).where(SupportTicket.ticket_number == tn).limit(1)
+        )
         t = res.scalars().first()
         if not t:
             await update.message.reply_text("Ticket not found.")
@@ -365,7 +384,10 @@ async def treply_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             SupportTicket,
             TicketStatus,
         )
-        res = await db.execute(select(SupportTicket).where(SupportTicket.ticket_number == tn).limit(1))
+
+        res = await db.execute(
+            select(SupportTicket).where(SupportTicket.ticket_number == tn).limit(1)
+        )
         t = res.scalars().first()
         if not t:
             await update.message.reply_text("Ticket not found.")
@@ -384,7 +406,9 @@ async def treply_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         await db.commit()
         await update.message.reply_text("✅ Reply sent.")
         try:
-            await context.bot.send_message(chat_id=t.user_id, text=f"🛠 پاسخ پشتیبانی (#{t.ticket_number}):\n\n{body}")
+            await context.bot.send_message(
+                chat_id=t.user_id, text=f"🛠 پاسخ پشتیبانی (#{t.ticket_number}):\n\n{body}"
+            )
         except Exception as e:
             logger.warning(f"Failed to notify ticket user {t.user_id}: {e}")
 
@@ -404,7 +428,10 @@ async def tclose_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             await update.message.reply_text("Admin only.")
             return
         from database.models import SupportTicket, TicketStatus
-        res = await db.execute(select(SupportTicket).where(SupportTicket.ticket_number == tn).limit(1))
+
+        res = await db.execute(
+            select(SupportTicket).where(SupportTicket.ticket_number == tn).limit(1)
+        )
         t = res.scalars().first()
         if not t:
             await update.message.reply_text("Ticket not found.")
@@ -415,7 +442,9 @@ async def tclose_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         await db.commit()
         await update.message.reply_text("✅ Ticket closed.")
         try:
-            await context.bot.send_message(chat_id=t.user_id, text=f"✅ تیکت شما بسته شد. (#{t.ticket_number})")
+            await context.bot.send_message(
+                chat_id=t.user_id, text=f"✅ تیکت شما بسته شد. (#{t.ticket_number})"
+            )
         except Exception as e:
             logger.warning(f"Failed to notify ticket user {t.user_id}: {e}")
 
@@ -463,6 +492,7 @@ async def addbal_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             await update.message.reply_text("Admin only.")
             return
         from database.models import WalletTxType
+
         tx = await apply_wallet_tx(
             db,
             user_id=target_id,
@@ -472,6 +502,7 @@ async def addbal_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             note=note,
         )
         await update.message.reply_text(f"✅ Balance updated. New balance={tx.balance_after}")
+
 
 async def admin_sync_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Admin: sync a service traffic/limits from panel: /sync <service_id>."""
@@ -552,7 +583,9 @@ async def admin_renew_command(update: Update, context: ContextTypes.DEFAULT_TYPE
         new_exp = (svc.expiry_date or datetime.utcnow()) + timedelta(days=add_days)
         panel_service = await PanelFactory.create_panel(panel)
         try:
-            await panel_service.renew_user(username=svc.client_email, expire_ts=int(new_exp.timestamp()))
+            await panel_service.renew_user(
+                username=svc.client_email, expire_ts=int(new_exp.timestamp())
+            )
         finally:
             await panel_service.close()
         svc.expiry_date = new_exp
@@ -592,7 +625,9 @@ async def admin_addgb_command(update: Update, context: ContextTypes.DEFAULT_TYPE
             await panel_service.add_traffic(username=svc.client_email, add_bytes=gb * (1024**3))
         finally:
             await panel_service.close()
-        await update.message.reply_text(f"✅ Added {gb}GB to service #{svc.id}. Run /sync {svc.id} to refresh stats.")
+        await update.message.reply_text(
+            f"✅ Added {gb}GB to service #{svc.id}. Run /sync {svc.id} to refresh stats."
+        )
 
 
 async def admin_rotate_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -625,7 +660,9 @@ async def admin_rotate_command(update: Update, context: ContextTypes.DEFAULT_TYP
         try:
             await panel_service.rotate_credentials(username=svc.client_email, protocol=svc.protocol)
             # Rebuild config link with new credentials
-            new_link = await panel_service.generate_config_link(username=svc.client_email, protocol=svc.protocol)
+            new_link = await panel_service.generate_config_link(
+                username=svc.client_email, protocol=svc.protocol
+            )
         finally:
             await panel_service.close()
         svc.config_link = new_link
@@ -663,7 +700,9 @@ async def admin_payapprove_command(update: Update, context: ContextTypes.DEFAULT
             if purchase.service_id:
                 svc = await db.get(Service, purchase.service_id)
                 if svc and svc.config_link:
-                    await update.message.reply_text(f"Already completed. Service #{svc.id}\n{svc.config_link}")
+                    await update.message.reply_text(
+                        f"Already completed. Service #{svc.id}\n{svc.config_link}"
+                    )
                 else:
                     await update.message.reply_text("Already completed.")
                 return
@@ -686,16 +725,22 @@ async def admin_payapprove_command(update: Update, context: ContextTypes.DEFAULT
                 logger.warning(f"Failed to notify user {purchase.user_id}: {e}")
         else:
             assert svc is not None
-            await update.message.reply_text(f"✅ Approved payment #{pay.id}. Fulfilled service #{svc.id}.")
+            await update.message.reply_text(
+                f"✅ Approved payment #{pay.id}. Fulfilled service #{svc.id}."
+            )
             try:
                 from services.subscription import (
                     ensure_service_sub_token,
                     subscription_url_from_token,
                 )
+
                 tok = await ensure_service_sub_token(db, svc)
                 sub_url = subscription_url_from_token(tok)
                 sub_txt = f"\n\n🔗 Sub:\n{sub_url}" if sub_url else ""
-                await context.bot.send_message(chat_id=purchase.user_id, text=f"✅ پرداخت تایید شد.\n\n🔗 {svc.config_link}{sub_txt}")
+                await context.bot.send_message(
+                    chat_id=purchase.user_id,
+                    text=f"✅ پرداخت تایید شد.\n\n🔗 {svc.config_link}{sub_txt}",
+                )
             except Exception as e:
                 logger.warning(f"Failed to notify user {purchase.user_id}: {e}")
 
@@ -736,8 +781,10 @@ async def admin_payreject_command(update: Update, context: ContextTypes.DEFAULT_
             purchase.status = PurchaseStatus.FAILED
             if purchase.product_id:
                 from config.features import is_enabled
+
                 if is_enabled("inventory"):
                     from services.inventory import release_stock
+
                     await release_stock(db, product_id=int(purchase.product_id), qty=1)
         pay.status = PaymentStatus.FAILED
         pay.admin_notes = "Rejected by admin"
@@ -746,7 +793,10 @@ async def admin_payreject_command(update: Update, context: ContextTypes.DEFAULT_
         await update.message.reply_text(f"❌ Rejected payment #{pay.id}.")
         if purchase:
             try:
-                await context.bot.send_message(chat_id=purchase.user_id, text="❌ پرداخت شما رد شد. لطفاً با پشتیبانی تماس بگیرید.")
+                await context.bot.send_message(
+                    chat_id=purchase.user_id,
+                    text="❌ پرداخت شما رد شد. لطفاً با پشتیبانی تماس بگیرید.",
+                )
             except Exception as e:
                 logger.warning(f"Failed to notify user {purchase.user_id}: {e}")
 
@@ -910,7 +960,9 @@ async def admin_stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE
                 f"By Product:\n"
             )
             for pid, data in list(report["by_product"].items())[:5]:
-                txt += f"  {data['product_name']}: {data['count']} sales, {data['revenue']:,} Toman\n"
+                txt += (
+                    f"  {data['product_name']}: {data['count']} sales, {data['revenue']:,} Toman\n"
+                )
             await update.message.reply_text(txt)
         elif report_type == "trials":
             report = await get_trial_report(db)
@@ -955,8 +1007,12 @@ async def admin_refund_command(update: Update, context: ContextTypes.DEFAULT_TYP
             return
 
         try:
-            result = await refund_purchase(db, purchase_id=purchase_id, admin_id=user.id, reason=reason)
-            await update.message.reply_text(f"✅ Refunded purchase #{purchase_id}. Amount: {result.get('refund_amount', 0):,} Toman")
+            result = await refund_purchase(
+                db, purchase_id=purchase_id, admin_id=user.id, reason=reason
+            )
+            await update.message.reply_text(
+                f"✅ Refunded purchase #{purchase_id}. Amount: {result.get('refund_amount', 0):,} Toman"
+            )
         except ValueError as e:
             await update.message.reply_text(f"❌ Error: {e}")
 
@@ -1021,7 +1077,9 @@ async def admin_panel_command(update: Update, context: ContextTypes.DEFAULT_TYPE
         await update.message.reply_text(text, reply_markup=admin_main_keyboard())
 
 
-async def admin_transfer_service_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def admin_transfer_service_command(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+) -> None:
     """Admin: transfer service to another user. Usage: /transfersvc <service_id> <new_user_id> [reason]"""
     user = update.effective_user
     if not user or not update.message:
@@ -1046,8 +1104,12 @@ async def admin_transfer_service_command(update: Update, context: ContextTypes.D
             return
 
         try:
-            await transfer_service(db, service_id=service_id, new_user_id=new_user_id, admin_id=user.id, reason=reason)
-            await update.message.reply_text(f"✅ Transferred service #{service_id} to user {new_user_id}")
+            await transfer_service(
+                db, service_id=service_id, new_user_id=new_user_id, admin_id=user.id, reason=reason
+            )
+            await update.message.reply_text(
+                f"✅ Transferred service #{service_id} to user {new_user_id}"
+            )
         except ValueError as e:
             await update.message.reply_text(f"❌ Error: {e}")
 
@@ -1082,4 +1144,3 @@ def register_command_handlers(application: Application) -> None:
     application.add_handler(CommandHandler("refund", admin_refund_command))
     application.add_handler(CommandHandler("removesvc", admin_remove_service_command))
     application.add_handler(CommandHandler("transfersvc", admin_transfer_service_command))
-

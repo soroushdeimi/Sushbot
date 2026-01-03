@@ -61,13 +61,17 @@ class MarzbanAPIClient:
         """
         # Check if we have a valid cached token
         if self._token and self._token_expires_at:
-            if datetime.utcnow() < self._token_expires_at - timedelta(minutes=5):  # Refresh 5 min before expiry
+            if datetime.utcnow() < self._token_expires_at - timedelta(
+                minutes=5
+            ):  # Refresh 5 min before expiry
                 return self._token
 
         # If api_key is provided, use it directly
         if self.api_key:
             self._token = self.api_key
-            self._token_expires_at = datetime.utcnow() + timedelta(hours=24)  # Assume long-lived token
+            self._token_expires_at = datetime.utcnow() + timedelta(
+                hours=24
+            )  # Assume long-lived token
             return self._token
 
         # Otherwise, authenticate with username/password
@@ -384,4 +388,3 @@ class MarzbanAPIClient:
         if self._client:
             await self._client.aclose()
             self._client = None
-

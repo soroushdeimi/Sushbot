@@ -31,6 +31,3 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     op.execute("DROP TABLE IF EXISTS user_states CASCADE;")
-
-
-

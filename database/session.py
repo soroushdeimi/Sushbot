@@ -1,4 +1,4 @@
-"""Database session management """
+"""Database session management"""
 
 from __future__ import annotations
 
@@ -84,4 +84,3 @@ async def init_db() -> None:
 async def close_db() -> None:
     """Close database connections."""
     await engine.dispose()
-

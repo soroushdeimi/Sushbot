@@ -244,4 +244,3 @@ def get_bilingual_text(persian: str, english: str, user: User | None = None) -> 
     if lang == Language.ENGLISH:
         return english
     return persian
-

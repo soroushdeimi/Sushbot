@@ -273,4 +273,3 @@ async def get_reseller_stats_endpoint(
 
     stats = await get_reseller_stats(db, user_id=user_id)
     return stats
-

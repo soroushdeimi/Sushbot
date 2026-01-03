@@ -33,9 +33,9 @@ async def text_message_handler(update: Update, context: ContextTypes.DEFAULT_TYP
 
     text = update.message.text.strip()
     # Normalize: remove zero-width non-joiner and other invisible characters for consistent matching
-    text = text.replace('\u200c', '').replace('\u200d', '').strip()
+    text = text.replace("\u200c", "").replace("\u200d", "").strip()
     user = update.effective_user
-    logger.info(f"Incoming text user_id={getattr(user,'id',None)} text={text!r}")
+    logger.info(f"Incoming text user_id={getattr(user, 'id', None)} text={text!r}")
 
     # Get user state
     if user:
@@ -53,7 +53,9 @@ async def text_message_handler(update: Update, context: ContextTypes.DEFAULT_TYP
             if not db_user:
                 await update.message.reply_text("Please use /start first.")
                 return
-            ok, msg, _amt = await apply_gift_code_to_wallet(db, code=text.strip().upper(), user_id=db_user.id)
+            ok, msg, _amt = await apply_gift_code_to_wallet(
+                db, code=text.strip().upper(), user_id=db_user.id
+            )
             await clear_state(user.id)
             await update.message.reply_text(msg)
         return
@@ -106,7 +108,9 @@ async def text_message_handler(update: Update, context: ContextTypes.DEFAULT_TYP
                 f"{t('amount', db_user, lang)}: {amount:,} Toman\n\n"
                 f"{t('select_payment_method', db_user, lang)}"
             )
-            await update.message.reply_text(txt, reply_markup=payment_gateway_keyboard(str(purchase.id), db_user))
+            await update.message.reply_text(
+                txt, reply_markup=payment_gateway_keyboard(str(purchase.id), db_user)
+            )
         return
 
     # Discount code input flow
@@ -193,17 +197,16 @@ async def text_message_handler(update: Update, context: ContextTypes.DEFAULT_TYP
                 payload["name"] = text.strip()
                 await set_step(user.id, step="admin.add_panel.type", payload=payload)
                 await update.message.reply_text(
-                    "✅ نام پنل ثبت شد.\n\n"
-                    "2️⃣ لطفاً نوع پنل را وارد کنید:\n"
-                    "- pasarguard\n"
-                    "- marzban"
+                    "✅ نام پنل ثبت شد.\n\n2️⃣ لطفاً نوع پنل را وارد کنید:\n- pasarguard\n- marzban"
                 )
                 return
 
             elif step == "admin.add_panel.type":
                 panel_type = text.strip().lower()
                 if panel_type not in ["pasarguard", "marzban"]:
-                    await update.message.reply_text("❌ نوع پنل نامعتبر. لطفاً 'pasarguard' یا 'marzban' وارد کنید.")
+                    await update.message.reply_text(
+                        "❌ نوع پنل نامعتبر. لطفاً 'pasarguard' یا 'marzban' وارد کنید."
+                    )
                     return
                 payload["type"] = panel_type
                 await set_step(user.id, step="admin.add_panel.api_url", payload=payload)
@@ -217,7 +220,9 @@ async def text_message_handler(update: Update, context: ContextTypes.DEFAULT_TYP
             elif step == "admin.add_panel.api_url":
                 api_url = text.strip()
                 if not api_url.startswith(("http://", "https://")):
-                    await update.message.reply_text("❌ URL نامعتبر. باید با http:// یا https:// شروع شود.")
+                    await update.message.reply_text(
+                        "❌ URL نامعتبر. باید با http:// یا https:// شروع شود."
+                    )
                     return
                 payload["api_url"] = api_url
                 await set_step(user.id, step="admin.add_panel.credentials", payload=payload)
@@ -232,7 +237,9 @@ async def text_message_handler(update: Update, context: ContextTypes.DEFAULT_TYP
             elif step == "admin.add_panel.credentials":
                 credentials = text.strip()
                 # Encrypt credentials before storing
-                encrypted_credentials = encrypt_panel_credentials(credentials) if credentials else ""
+                encrypted_credentials = (
+                    encrypt_panel_credentials(credentials) if credentials else ""
+                )
 
                 # Parse username:password if applicable
                 username = None
@@ -241,7 +248,11 @@ async def text_message_handler(update: Update, context: ContextTypes.DEFAULT_TYP
                     parts = credentials.split(":", 1)
                     if len(parts) == 2:
                         username = parts[0].strip()
-                        password = encrypt_panel_credentials(parts[1].strip()) if parts[1].strip() else None
+                        password = (
+                            encrypt_panel_credentials(parts[1].strip())
+                            if parts[1].strip()
+                            else None
+                        )
 
                 payload["api_key"] = encrypted_credentials
                 payload["username"] = username
@@ -344,7 +355,9 @@ async def text_message_handler(update: Update, context: ContextTypes.DEFAULT_TYP
                 except Exception as e:
                     logger.warning(f"Failed to notify admin {admin.user_id}: {e}")
 
-        await update.message.reply_text(f"✅ تیکت شما ثبت شد.\n\nشماره تیکت: #{ticket_no}\n\nپشتیبانی به زودی پاسخ می‌دهد.")
+        await update.message.reply_text(
+            f"✅ تیکت شما ثبت شد.\n\nشماره تیکت: #{ticket_no}\n\nپشتیبانی به زودی پاسخ می‌دهد."
+        )
         return
 
     # Menu without commands (reply keyboard buttons) - with i18n
@@ -360,30 +373,44 @@ async def text_message_handler(update: Update, context: ContextTypes.DEFAULT_TYP
 
         # Check if this is a reply keyboard button (any of the menu buttons)
         # Get all possible button texts
-        purchase_text = t("purchase_service", db_user).replace('\u200c', '').replace('\u200d', '').strip()
-        services_text = t("my_services", db_user).replace('\u200c', '').replace('\u200d', '').strip()
-        wallet_text = t("wallet", db_user).replace('\u200c', '').replace('\u200d', '').strip()
-        affiliate_text = t("affiliate", db_user).replace('\u200c', '').replace('\u200d', '').strip()
-        trial_text = t("free_trial", db_user).replace('\u200c', '').replace('\u200d', '').strip()
-        support_text = t("support", db_user).replace('\u200c', '').replace('\u200d', '').strip()
+        purchase_text = (
+            t("purchase_service", db_user).replace("\u200c", "").replace("\u200d", "").strip()
+        )
+        services_text = (
+            t("my_services", db_user).replace("\u200c", "").replace("\u200d", "").strip()
+        )
+        wallet_text = t("wallet", db_user).replace("\u200c", "").replace("\u200d", "").strip()
+        affiliate_text = t("affiliate", db_user).replace("\u200c", "").replace("\u200d", "").strip()
+        trial_text = t("free_trial", db_user).replace("\u200c", "").replace("\u200d", "").strip()
+        support_text = t("support", db_user).replace("\u200c", "").replace("\u200d", "").strip()
         menu_text_btn = t("menu", db_user)
 
         # Normalize received text
-        text_normalized = text.replace('\u200c', '').replace('\u200d', '').strip()
+        text_normalized = text.replace("\u200c", "").replace("\u200d", "").strip()
 
         # Check if it's a reply keyboard button (starts with emoji or matches button text)
         is_reply_keyboard_button = (
-            text.startswith("🛒") or text.startswith("📦") or text.startswith("💰") or
-            text.startswith("👥") or text.startswith("🎁") or text.startswith("💬") or
-            text_normalized == purchase_text or text_normalized == services_text or
-            text_normalized == wallet_text or text_normalized == affiliate_text or
-            text_normalized == trial_text or text_normalized == support_text or
-            text_normalized == menu_text_btn or text.lower() in {"منو", "menu"} or text in {"menu", "/menu"}
+            text.startswith("🛒")
+            or text.startswith("📦")
+            or text.startswith("💰")
+            or text.startswith("👥")
+            or text.startswith("🎁")
+            or text.startswith("💬")
+            or text_normalized == purchase_text
+            or text_normalized == services_text
+            or text_normalized == wallet_text
+            or text_normalized == affiliate_text
+            or text_normalized == trial_text
+            or text_normalized == support_text
+            or text_normalized == menu_text_btn
+            or text.lower() in {"منو", "menu"}
+            or text in {"menu", "/menu"}
         )
 
         if is_reply_keyboard_button:
             # When user presses "Menu" button, show inline keyboard with options
             from bot.keyboards import main_menu_keyboard
+
             menu_text = t("menu", db_user) + ":\n\n" + t("choose_option", db_user)
             await update.message.reply_text(menu_text, reply_markup=main_menu_keyboard(db_user))
             return
@@ -405,7 +432,9 @@ async def photo_message_handler(update: Update, context: ContextTypes.DEFAULT_TY
     logger.info(f"Incoming photo user_id={user.id} caption={update.message.caption!r}")
     st = await get_state(user.id)
     if st.step != "payment.awaiting_receipt":
-        await update.message.reply_text("عکس دریافت شد. اگر برای پرداخت نیست، از /menu استفاده کنید.")
+        await update.message.reply_text(
+            "عکس دریافت شد. اگر برای پرداخت نیست، از /menu استفاده کنید."
+        )
         return
 
     payment_id = int((st.payload or {}).get("payment_id") or 0)
@@ -430,6 +459,7 @@ async def photo_message_handler(update: Update, context: ContextTypes.DEFAULT_TY
 
         # Notify admins with inline keyboard
         from bot.admin_keyboards import admin_payment_detail_keyboard
+
         res = await db.execute(select(Admin).where(Admin.is_active.is_(True)))
         admins = list(res.scalars().all())
 
@@ -454,7 +484,7 @@ async def photo_message_handler(update: Update, context: ContextTypes.DEFAULT_TY
                     chat_id=admin.user_id,
                     photo=file_id,
                     caption=txt,
-                    reply_markup=admin_payment_detail_keyboard(payment_id)
+                    reply_markup=admin_payment_detail_keyboard(payment_id),
                 )
             except Exception as e:
                 logger.warning(f"Failed to notify admin {admin.user_id}: {e}")
@@ -493,7 +523,9 @@ async def contact_message_handler(update: Update, context: ContextTypes.DEFAULT_
         db_user.phone_number = sanitized
         db_user.phone_verified = True
         await db.commit()
-        await update.message.reply_text(t("phone_verified_ok", db_user, lang), reply_markup=main_reply_keyboard(db_user))
+        await update.message.reply_text(
+            t("phone_verified_ok", db_user, lang), reply_markup=main_reply_keyboard(db_user)
+        )
         await update.message.reply_text("⬇️", reply_markup=main_menu_keyboard(db_user))
 
 
@@ -520,7 +552,8 @@ async def _create_panel_from_payload(db: AsyncSession, payload: dict, admin_id: 
 def register_message_handlers(application: Application) -> None:
     """Register all message handlers."""
     # Register TEXT handler FIRST (before other handlers that might catch it)
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_message_handler), group=0)
+    application.add_handler(
+        MessageHandler(filters.TEXT & ~filters.COMMAND, text_message_handler), group=0
+    )
     application.add_handler(MessageHandler(filters.CONTACT, contact_message_handler), group=1)
     application.add_handler(MessageHandler(filters.PHOTO, photo_message_handler), group=1)
-

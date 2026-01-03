@@ -94,4 +94,3 @@ class AqayepardakhtGateway:
     ) -> dict[str, Any]:
         """Check Aqayepardakht payment status."""
         return await self.verify_payment(transid=transid, amount=amount)
-

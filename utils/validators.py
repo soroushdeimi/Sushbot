@@ -37,7 +37,9 @@ def sanitize_input(text: str, max_length: int = 1000) -> str:
     return cleaned[:max_length]
 
 
-def validate_amount(amount: int | float, min_amount: int = 1000, max_amount: int = 100000000) -> bool:
+def validate_amount(
+    amount: int | float, min_amount: int = 1000, max_amount: int = 100000000
+) -> bool:
     """Validate payment amount."""
     try:
         amount_int = int(amount)
@@ -77,4 +79,3 @@ def validate_shaba_number(shaba: str) -> bool:
         return False
     cleaned = re.sub(r"\D", "", shaba)
     return len(cleaned) == 24  # 2 letters + 24 digits
-

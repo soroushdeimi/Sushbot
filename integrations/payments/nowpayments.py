@@ -95,4 +95,3 @@ class NowPaymentsGateway:
             hashlib.sha512,
         ).hexdigest()
         return hmac.compare_digest(signature, expected_signature)
-

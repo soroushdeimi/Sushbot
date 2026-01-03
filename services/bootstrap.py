@@ -47,7 +47,9 @@ async def bootstrap_seed_data() -> None:
         # Seed multiple default plans only if DB looks "empty-ish" (single auto product)
         res = await db.execute(select(func.count()).select_from(Product))
         cnt = int(res.scalar() or 0)
-        should_seed_plans = cnt == 0 or (cnt == 1 and product and "Auto" in (product.name or "") and int(product.price) == 0)
+        should_seed_plans = cnt == 0 or (
+            cnt == 1 and product and "Auto" in (product.name or "") and int(product.price) == 0
+        )
         if should_seed_plans:
             # Delete all existing products first (including free ones)
             await db.execute(Product.__table__.delete())
@@ -81,7 +83,3 @@ async def bootstrap_seed_data() -> None:
                 )
             await db.commit()
             logger.info("Seeded default plans (multiple products).")
-
-
-
-

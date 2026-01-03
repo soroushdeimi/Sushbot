@@ -9,6 +9,3 @@ def test_subscription_payload_base64() -> None:
     raw = base64.b64decode(s.encode("ascii")).decode("utf-8")
     assert "vless://uuid@host:443#x" in raw
     assert raw.endswith("\n")
-
-
-

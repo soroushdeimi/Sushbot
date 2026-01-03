@@ -8,7 +8,9 @@ from typing import Any
 class PanelError(Exception):
     """Base exception for all panel-related errors."""
 
-    def __init__(self, message: str, panel_name: str | None = None, details: dict[str, Any] | None = None) -> None:
+    def __init__(
+        self, message: str, panel_name: str | None = None, details: dict[str, Any] | None = None
+    ) -> None:
         """
         Initialize panel error.
 
@@ -72,4 +74,3 @@ class PanelTimeoutError(PanelError):
     """Raised when panel operation times out."""
 
     pass
-

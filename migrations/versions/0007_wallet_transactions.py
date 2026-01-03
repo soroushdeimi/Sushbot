@@ -26,14 +26,17 @@ def upgrade() -> None:
         );
         """
     )
-    op.execute("CREATE INDEX IF NOT EXISTS ix_wallet_transactions_user_id ON wallet_transactions(user_id);")
-    op.execute("CREATE INDEX IF NOT EXISTS ix_wallet_transactions_tx_type ON wallet_transactions(tx_type);")
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_wallet_transactions_user_id ON wallet_transactions(user_id);"
+    )
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_wallet_transactions_tx_type ON wallet_transactions(tx_type);"
+    )
     op.execute("CREATE INDEX IF NOT EXISTS ix_wallet_transactions_ref ON wallet_transactions(ref);")
-    op.execute("CREATE INDEX IF NOT EXISTS ix_wallet_transactions_created_at ON wallet_transactions(created_at);")
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_wallet_transactions_created_at ON wallet_transactions(created_at);"
+    )
 
 
 def downgrade() -> None:
     op.execute("DROP TABLE IF EXISTS wallet_transactions CASCADE;")
-
-
-

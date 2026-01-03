@@ -14,4 +14,3 @@ def register_handlers(application: Application) -> None:
     register_callback_handlers(application)
     register_message_handlers(application)
     register_admin_handlers(application)
-

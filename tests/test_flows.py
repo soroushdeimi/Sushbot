@@ -339,22 +339,24 @@ async def test_get_live_analytics(mock_db):
     from services.admin_panel import get_live_analytics
 
     # Mock all scalar queries
-    mock_db.scalar = AsyncMock(side_effect=[
-        100,    # total_users
-        25,     # active_users_today
-        80,     # active_users_month
-        5,      # new_users_today
-        30,     # new_users_month
-        5000000,  # total_revenue
-        100000,   # revenue_today
-        500000,   # revenue_week
-        2000000,  # revenue_month
-        45,     # active_services
-        10,     # expired_services
-        3,      # pending_payments
-        750000,  # total_wallet_balance
-        1073741824,  # total_bandwidth (1 GB in bytes)
-    ])
+    mock_db.scalar = AsyncMock(
+        side_effect=[
+            100,  # total_users
+            25,  # active_users_today
+            80,  # active_users_month
+            5,  # new_users_today
+            30,  # new_users_month
+            5000000,  # total_revenue
+            100000,  # revenue_today
+            500000,  # revenue_week
+            2000000,  # revenue_month
+            45,  # active_services
+            10,  # expired_services
+            3,  # pending_payments
+            750000,  # total_wallet_balance
+            1073741824,  # total_bandwidth (1 GB in bytes)
+        ]
+    )
 
     analytics = await get_live_analytics(mock_db)
 
@@ -393,7 +395,7 @@ async def test_format_analytics_message_fa():
 
     assert "آمار زنده" in message
     assert "100" in message  # total_users
-    assert "45" in message   # active_services
+    assert "45" in message  # active_services
 
 
 # =============================================================================

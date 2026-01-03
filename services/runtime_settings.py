@@ -22,5 +22,3 @@ async def set_setting(db: AsyncSession, *, key: str, value: str) -> None:
     else:
         db.add(AppSetting(key=key, value=value))
     await db.commit()
-
-

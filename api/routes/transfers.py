@@ -49,7 +49,11 @@ async def transfer_service_endpoint(
             db,
             actor_user_id=cur.user.id,
             action="api.service.transfer",
-            meta={"service_id": req.service_id, "new_user_id": req.new_user_id, "reason": req.reason},
+            meta={
+                "service_id": req.service_id,
+                "new_user_id": req.new_user_id,
+                "reason": req.reason,
+            },
         )
         return result
     except ValueError as e:
@@ -78,9 +82,12 @@ async def change_location_endpoint(
             db,
             actor_user_id=cur.user.id,
             action="api.service.change_location",
-            meta={"service_id": req.service_id, "new_inbound_tag": req.new_inbound_tag, "reason": req.reason},
+            meta={
+                "service_id": req.service_id,
+                "new_inbound_tag": req.new_inbound_tag,
+                "reason": req.reason,
+            },
         )
         return result
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-

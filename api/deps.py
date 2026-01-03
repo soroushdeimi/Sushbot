@@ -21,7 +21,9 @@ class CurrentAdmin:
     admin: Admin
 
 
-async def get_current_admin(token: str = Depends(oauth2_scheme), db=Depends(get_db)) -> CurrentAdmin:
+async def get_current_admin(
+    token: str = Depends(oauth2_scheme), db=Depends(get_db)
+) -> CurrentAdmin:
     payload = verify_token(token)
     if not payload or "sub" not in payload:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
@@ -45,10 +47,9 @@ async def get_current_admin(token: str = Depends(oauth2_scheme), db=Depends(get_
 def require_level(*levels: AdminLevel):
     async def _dep(cur: CurrentAdmin = Depends(get_current_admin)) -> CurrentAdmin:
         if cur.admin.level not in levels:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient privileges")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient privileges"
+            )
         return cur
 
     return _dep
-
-
-

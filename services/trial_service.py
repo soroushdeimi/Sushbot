@@ -36,7 +36,9 @@ async def create_trial_for_user(db: AsyncSession, *, user: User) -> tuple[TrialA
     if active_trial:
         raise TrialError("active_trial_exists")
 
-    res = await db.execute(select(TrialAccount).where(TrialAccount.user_id == user.id, TrialAccount.is_used.is_(True)))
+    res = await db.execute(
+        select(TrialAccount).where(TrialAccount.user_id == user.id, TrialAccount.is_used.is_(True))
+    )
     used_trial = res.scalars().first()
     if used_trial:
         raise TrialError("trial_already_used")
@@ -120,7 +122,9 @@ async def create_trial_for_user(db: AsyncSession, *, user: User) -> tuple[TrialA
         logger.warning(f"Panel error creating trial service subscription token: {e}")
         # Don't fail trial creation if subscription token fails
     except Exception as e:
-        logger.error(f"Unexpected error creating trial service subscription token: {e}", exc_info=True)
+        logger.error(
+            f"Unexpected error creating trial service subscription token: {e}", exc_info=True
+        )
         # Still don't fail - subscription token is optional
 
     trial.service_id = service.id
@@ -130,5 +134,3 @@ async def create_trial_for_user(db: AsyncSession, *, user: User) -> tuple[TrialA
     await db.commit()
     await db.refresh(trial)
     return trial, service
-
-

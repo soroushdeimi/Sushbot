@@ -21,8 +21,12 @@ class ResellerPricing(Base, TimestampMixin):
     __tablename__ = "reseller_pricing"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    reseller_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    product_id: Mapped[int] = mapped_column(ForeignKey("products.id", ondelete="CASCADE"), nullable=False, index=True)
+    reseller_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    product_id: Mapped[int] = mapped_column(
+        ForeignKey("products.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     discount_percent: Mapped[int] = mapped_column(Integer, nullable=False)  # 0-100
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
@@ -40,8 +44,12 @@ class ResellerQuota(Base, TimestampMixin):
     __tablename__ = "reseller_quotas"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    reseller_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    product_id: Mapped[int | None] = mapped_column(ForeignKey("products.id", ondelete="CASCADE"), nullable=True, index=True)  # None = global quota
+    reseller_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    product_id: Mapped[int | None] = mapped_column(
+        ForeignKey("products.id", ondelete="CASCADE"), nullable=True, index=True
+    )  # None = global quota
     monthly_limit: Mapped[int | None] = mapped_column(Integer, nullable=True)  # None = unlimited
     current_month_usage: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     reset_date: Mapped[datetime] = mapped_column(nullable=False)
@@ -52,4 +60,3 @@ class ResellerQuota(Base, TimestampMixin):
 
     def __repr__(self) -> str:
         return f"<ResellerQuota(id={self.id}, reseller_id={self.reseller_id}, product_id={self.product_id}, monthly_limit={self.monthly_limit}, current_month_usage={self.current_month_usage})>"
-

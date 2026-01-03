@@ -28,15 +28,22 @@ def upgrade() -> None:
         );
         """
     )
-    op.execute("CREATE INDEX IF NOT EXISTS ix_support_messages_ticket_id ON support_messages(ticket_id);")
-    op.execute("CREATE INDEX IF NOT EXISTS ix_support_messages_sender_id ON support_messages(sender_id);")
-    op.execute("CREATE INDEX IF NOT EXISTS ix_support_messages_sender_type ON support_messages(sender_type);")
-    op.execute("CREATE INDEX IF NOT EXISTS ix_support_messages_message_type ON support_messages(message_type);")
-    op.execute("CREATE INDEX IF NOT EXISTS ix_support_messages_created_at ON support_messages(created_at);")
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_support_messages_ticket_id ON support_messages(ticket_id);"
+    )
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_support_messages_sender_id ON support_messages(sender_id);"
+    )
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_support_messages_sender_type ON support_messages(sender_type);"
+    )
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_support_messages_message_type ON support_messages(message_type);"
+    )
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_support_messages_created_at ON support_messages(created_at);"
+    )
 
 
 def downgrade() -> None:
     op.execute("DROP TABLE IF EXISTS support_messages CASCADE;")
-
-
-
