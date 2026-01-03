@@ -54,8 +54,8 @@ on:
 env:
   PYTHON_VERSION: "3.12"
   # PostgreSQL test database credentials (NOT production - safe to expose)
-  POSTGRES_USER: postgres
-  POSTGRES_PASSWORD: postgres
+  POSTGRES_USER: test_user
+  POSTGRES_PASSWORD: test_password_ci_only
   POSTGRES_DB: test_sushbotseller
 
 # =============================================================================
@@ -346,7 +346,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install -r requirements-dev.txt
-          pip install -e .
 
       # -----------------------------------------------------------------------
       # Step: Run Pytest
@@ -368,7 +367,6 @@ jobs:
           SUPER_ADMIN_TELEGRAM_ID: "12345"
           SECRET_KEY: "test-secret-key-not-for-production"
           JWT_SECRET: "test-jwt-secret-not-for-production"
-          PYTHONPATH: ${{ github.workspace }}
         run: |
           echo "🧪 Running test suite..."
           pytest tests/ \
@@ -378,9 +376,21 @@ jobs:
             --cov=. \
             --cov-report=xml \
             --cov-report=term-missing \
-            --cov-fail-under=20
+            --cov-fail-under=60
 
-      # Note: Codecov upload removed - coverage report is available in test output
+      # -----------------------------------------------------------------------
+      # Step: Upload coverage to Codecov
+      # -----------------------------------------------------------------------
+      # Codecov provides a nice dashboard to visualize test coverage.
+      # You can add a coverage badge to your README!
+      # -----------------------------------------------------------------------
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          files: ./coverage.xml
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   # ===========================================================================
   # JOB 5: DOCKER BUILD VERIFICATION
@@ -468,30 +478,39 @@ jobs:
   # WHY: GitHub branch protection can require this one job to pass.
   # ===========================================================================
   all-checks-passed:
-    name: "✅ All Checks Passed"
+    name: "All Checks Passed"
     runs-on: ubuntu-latest
     needs: [lint, security, typecheck, test, docker-build]
-    if: always()  # Run even if some jobs were skipped
+    if: always()
 
     steps:
       - name: Check job statuses
         run: |
-          echo "📊 Job Results Summary:"
+          echo "Job Results Summary:"
           echo "  - Lint:      ${{ needs.lint.result }}"
           echo "  - Security:  ${{ needs.security.result }}"
           echo "  - TypeCheck: ${{ needs.typecheck.result }}"
           echo "  - Tests:     ${{ needs.test.result }}"
           echo "  - Docker:    ${{ needs.docker-build.result }}"
           
-          # Fail if any required job failed
+          # Fail only if jobs explicitly failed (not skipped)
+          # Skipped is OK - happens when paths-ignore triggers on doc-only changes
           if [[ "${{ needs.lint.result }}" == "failure" ]] || \
+             [[ "${{ needs.security.result }}" == "failure" ]] || \
+             [[ "${{ needs.typecheck.result }}" == "failure" ]] || \
              [[ "${{ needs.test.result }}" == "failure" ]] || \
              [[ "${{ needs.docker-build.result }}" == "failure" ]]; then
-            echo "❌ Required checks failed!"
+            echo "Required checks failed"
             exit 1
           fi
           
-          echo "✅ All required checks passed!"
+          # Warn if everything was skipped (doc-only change)
+          if [[ "${{ needs.lint.result }}" == "skipped" ]] && \
+             [[ "${{ needs.test.result }}" == "skipped" ]]; then
+            echo "All jobs skipped (docs-only change)"
+          else
+            echo "All required checks passed"
+          fi
 
   # ===========================================================================
   # JOB 7: DEPLOYMENT (PLACEHOLDER)
