@@ -4,7 +4,6 @@
 
 Do not open public issues for security bugs.
 
-Email: security@example.com
 
 Include: description, reproduction steps, impact assessment, suggested fix (if any).
 
