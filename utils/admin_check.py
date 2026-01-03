@@ -12,8 +12,9 @@ Note: We intentionally treat .env admins as active admins even if no DB Admin ro
 
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable
 from functools import wraps
-from typing import Any, Awaitable, Callable, TypeVar
+from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -52,10 +53,7 @@ async def is_admin(db: AsyncSession, telegram_user_id: int) -> bool:
     return (await get_admin(db, telegram_user_id)) is not None
 
 
-F = TypeVar("F", bound=Callable[..., Awaitable[Any]])
-
-
-def require_admin(func: F) -> F:
+def require_admin[F: Callable[..., Awaitable[Any]]](func: F) -> F:
     """Decorator for PTB handlers requiring admin access."""
 
     @wraps(func)

@@ -186,8 +186,8 @@ async def admin_user_purchases_callback(
         return
 
     async for db in get_db():
-        from handlers.commands import _require_admin
         from database.models import Purchase
+        from handlers.commands import _require_admin
 
         admin = await _require_admin(db, user.id)
         if not admin:
@@ -226,8 +226,8 @@ async def admin_user_ban_callback(
         return
 
     async for db in get_db():
-        from handlers.commands import _require_admin
         from database.models import UserStatus
+        from handlers.commands import _require_admin
 
         admin = await _require_admin(db, user.id)
         if not admin:

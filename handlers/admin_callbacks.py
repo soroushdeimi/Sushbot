@@ -25,7 +25,6 @@ from database.models import (
     Service,
     ServiceStatus,
     User,
-    UserRole,
 )
 from database.models.purchase import PurchaseType
 from database.session import get_db

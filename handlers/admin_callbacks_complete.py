@@ -32,7 +32,6 @@ from database.models import (
     SupportTicket,
     TicketStatus,
     User,
-    UserRole,
 )
 from database.models.purchase import PurchaseType
 from database.session import get_db
