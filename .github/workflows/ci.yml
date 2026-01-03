@@ -114,12 +114,14 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install -r requirements-dev.txt
+          pip install -e .
 
       - name: Run Tests
         env:
           DATABASE_URL: postgresql+asyncpg://${{ env.POSTGRES_USER }}:${{ env.POSTGRES_PASSWORD }}@localhost:5432/${{ env.POSTGRES_DB }}
           BOT_TOKEN: "test:token"
           SUPER_ADMIN_TELEGRAM_ID: "12345"
+          PYTHONPATH: ${{ github.workspace }}
         run: |
           pytest tests/ \
             -v \
@@ -127,7 +129,7 @@ jobs:
             -n auto \
             --cov=. \
             --cov-report=xml \
-            --cov-fail-under=80 || true
+            --cov-fail-under=0
 
       - name: Upload Coverage
         uses: codecov/codecov-action@v4
