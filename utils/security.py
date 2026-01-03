@@ -11,7 +11,8 @@ from enum import Enum
 from functools import wraps
 from typing import TYPE_CHECKING, Any, ParamSpec, TypeVar
 
-from jose import jwt
+import jwt
+from jwt.exceptions import PyJWTError
 from loguru import logger
 from passlib.context import CryptContext
 
@@ -315,7 +316,7 @@ def verify_token(token: str) -> dict[str, Any] | None:
     try:
         payload = jwt.decode(token, settings.jwt_secret, algorithms=["HS256"])
         return payload
-    except jwt.JWTError:
+    except PyJWTError:
         return None
 
 

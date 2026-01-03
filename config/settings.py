@@ -171,6 +171,10 @@ class Settings(BaseSettings):
         default=10 * 1024 * 1024,  # 10MB
         description="Maximum request body size in bytes (DoS protection)",
     )
+    panel_ssl_verify: bool = Field(
+        default=True,
+        description="Verify SSL certificates for panel API connections. Disable only in dev/test.",
+    )
 
     # Logging
     log_level: str = Field(default="INFO", description="Log level")
