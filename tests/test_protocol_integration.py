@@ -9,29 +9,28 @@ These tests verify:
 5. Protocol-specific parameter handling (flow, password, etc.)
 """
 
-import pytest
-import httpx
-import respx
-from unittest.mock import AsyncMock, MagicMock, patch
 import json
+from unittest.mock import AsyncMock, MagicMock
 
-from services.panel_utils import (
-    VPNProtocol,
-    validate_protocol_compatibility,
-    get_protocol_params,
-    PANEL_SUPPORTED_PROTOCOLS,
-)
+import httpx
+import pytest
+import respx
+
 from integrations.marzban.service import (
+    MARZBAN_PROTOCOL_NAMES,
     MarzbanService,
     normalize_protocol_for_marzban,
-    MARZBAN_PROTOCOL_NAMES,
 )
 from integrations.pasarguard.service import (
-    PasarGuardService,
-    normalize_protocol_for_pasarguard,
     PASARGUARD_PROTOCOL_NAMES,
+    normalize_protocol_for_pasarguard,
 )
-
+from services.panel_utils import (
+    PANEL_SUPPORTED_PROTOCOLS,
+    VPNProtocol,
+    get_protocol_params,
+    validate_protocol_compatibility,
+)
 
 # ============================================================================
 # Protocol Normalization Tests
@@ -152,9 +151,7 @@ class TestProtocolCompatibilityValidation:
     def test_unknown_panel_type_fails_gracefully(self):
         """Test that unknown panel types are handled gracefully."""
         # Unknown panel should return True with a warning (graceful degradation)
-        is_compatible, message = validate_protocol_compatibility(
-            "unknown_panel", "vless"
-        )
+        is_compatible, message = validate_protocol_compatibility("unknown_panel", "vless")
         # Based on implementation, unknown panels may pass through
         # This tests the actual behavior
         assert isinstance(is_compatible, bool)
@@ -272,11 +269,11 @@ class TestMarzbanAPIIntegration:
 
         # Verify the request was made
         assert create_route.called
-        
+
         # Get the request body
         request = create_route.calls.last.request
         body = json.loads(request.content)
-        
+
         # Verify protocol is lowercase in the payload
         if "proxies" in body:
             proxies = body["proxies"]
@@ -424,9 +421,7 @@ class TestProtocolSelectionE2E:
 
         for panel, supported in PANEL_SUPPORTED_PROTOCOLS.items():
             for proto in common_protocols:
-                assert proto in supported, (
-                    f"Protocol {proto} not supported by {panel}"
-                )
+                assert proto in supported, f"Protocol {proto} not supported by {panel}"
 
 
 # ============================================================================
@@ -520,6 +515,4 @@ class TestProtocolDataIntegrity:
         """Test that VPNProtocol enum has common protocol values."""
         common = ["VLESS", "VMESS", "TROJAN", "SHADOWSOCKS"]
         for proto in common:
-            assert hasattr(VPNProtocol, proto), (
-                f"VPNProtocol missing {proto}"
-            )
+            assert hasattr(VPNProtocol, proto), f"VPNProtocol missing {proto}"

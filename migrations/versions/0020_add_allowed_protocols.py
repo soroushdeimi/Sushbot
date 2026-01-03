@@ -29,10 +29,10 @@ depends_on: str | Sequence[str] | None = None
 
 def upgrade() -> None:
     """Add allowed_protocols column to products table.
-    
+
     The allowed_protocols column stores a JSON array of protocol strings.
     Example: '["vless", "vmess", "trojan"]'
-    
+
     If NULL, the product only supports the single protocol defined in
     the existing 'protocol' column.
     """

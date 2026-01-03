@@ -108,11 +108,11 @@ class Product(Base, TimestampMixin, SoftDeleteMixin):
 
     def get_allowed_protocols(self) -> list[str]:
         """Get list of allowed protocols for this product.
-        
+
         Returns parsed allowed_protocols JSON array if set,
         otherwise returns a single-item list with the default protocol.
         This ensures backward compatibility with legacy products.
-        
+
         Returns:
             List of protocol strings (e.g., ["vless", "vmess", "trojan"])
         """
@@ -128,7 +128,7 @@ class Product(Base, TimestampMixin, SoftDeleteMixin):
 
     def set_allowed_protocols(self, protocols: list[str]) -> None:
         """Set allowed protocols for this product.
-        
+
         Args:
             protocols: List of protocol strings (e.g., ["vless", "vmess"])
         """
@@ -142,7 +142,7 @@ class Product(Base, TimestampMixin, SoftDeleteMixin):
     @property
     def supports_multiple_protocols(self) -> bool:
         """Check if product supports multiple protocol choices.
-        
+
         Returns:
             True if user should be prompted to select protocol,
             False if product only supports one protocol.
@@ -151,10 +151,10 @@ class Product(Base, TimestampMixin, SoftDeleteMixin):
 
     def get_default_protocol(self) -> str:
         """Get the default protocol for this product.
-        
-        Returns the first allowed protocol, or falls back to 
+
+        Returns the first allowed protocol, or falls back to
         the legacy 'protocol' field.
-        
+
         Returns:
             Protocol string (e.g., "vless")
         """

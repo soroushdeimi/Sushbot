@@ -24,16 +24,16 @@ from utils.panel_username import make_panel_username
 
 def normalize_protocol(protocol: str) -> str:
     """Normalize protocol string to lowercase and handle aliases.
-    
+
     Panel APIs expect lowercase protocol names. This function ensures
     consistent protocol naming regardless of user input.
-    
+
     Args:
         protocol: Raw protocol string (may be mixed case)
-        
+
     Returns:
         Normalized lowercase protocol name
-        
+
     Examples:
         >>> normalize_protocol("VLESS")
         'vless'
@@ -108,11 +108,11 @@ async def provision_purchase(db: AsyncSession, *, purchase: Purchase) -> Service
     # Use the protocol from purchase (user's selection) not product (template)
     # This allows users to choose their preferred protocol for multi-protocol products
     raw_protocol = purchase.protocol or product.get_default_protocol()
-    
+
     # CRITICAL: Normalize protocol to lowercase for panel API compatibility
     # Panel APIs (Marzban, X-UI, etc.) expect lowercase protocol names
     selected_protocol = normalize_protocol(raw_protocol)
-    
+
     # Validate protocol is supported by this panel type before making API call
     panel_type = getattr(panel, "type", None) or "pasarguard"  # Default for legacy panels
     is_valid, validation_error = validate_protocol_compatibility(
@@ -126,7 +126,7 @@ async def provision_purchase(db: AsyncSession, *, purchase: Purchase) -> Service
         )
         # Don't fail here - the panel might support it even if we don't know about it
         # Just log the warning for monitoring
-    
+
     # Get protocol-specific parameters for proper config generation
     protocol_params = get_protocol_params(selected_protocol)
     default_flow = protocol_params.get("default_flow") if protocol_params else "xtls-rprx-vision"

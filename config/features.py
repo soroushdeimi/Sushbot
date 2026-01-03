@@ -133,13 +133,17 @@ REGISTRY: dict[str, Feature] = {
     ),
     # Notifications
     "expiry_reminders": Feature(
-        "FEATURE_EXPIRY_REMINDERS", True, description="Send automatic reminders before service expiry"
+        "FEATURE_EXPIRY_REMINDERS",
+        True,
+        description="Send automatic reminders before service expiry",
     ),
     "low_traffic_alerts": Feature(
         "FEATURE_LOW_TRAFFIC_ALERTS", True, description="Alert users when traffic is running low"
     ),
     "admin_notifications": Feature(
-        "FEATURE_ADMIN_NOTIFICATIONS", True, description="Send admin notifications for purchases/issues"
+        "FEATURE_ADMIN_NOTIFICATIONS",
+        True,
+        description="Send admin notifications for purchases/issues",
     ),
     # Multi-panel support
     "multi_panel": Feature(
@@ -187,7 +191,7 @@ def enabled_payment_gateways(*, env: os._Environ[str] = os.environ) -> set[str]:
 
 def get_all_features(*, env: os._Environ[str] = os.environ) -> dict[str, dict]:
     """Get all features with their status and description.
-    
+
     Returns:
         Dict mapping feature key to {enabled, env_key, description, default}
     """
@@ -216,14 +220,14 @@ def get_disabled_features(*, env: os._Environ[str] = os.environ) -> list[str]:
 def print_feature_status(*, env: os._Environ[str] = os.environ) -> str:
     """Generate a human-readable feature status report."""
     lines = ["📋 Feature Flags Status:", "=" * 40]
-    
+
     for key, feat in sorted(REGISTRY.items()):
         status = "✅" if is_enabled(key, env=env) else "❌"
         lines.append(f"{status} {key}: {feat.description}")
-    
+
     lines.append("=" * 40)
     enabled_count = len(get_enabled_features(env=env))
     total_count = len(REGISTRY)
     lines.append(f"Enabled: {enabled_count}/{total_count}")
-    
+
     return "\n".join(lines)

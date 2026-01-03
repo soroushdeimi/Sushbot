@@ -7,10 +7,8 @@ Create Date: 2026-01-03
 Populates app_settings with default values for dynamic config.
 """
 
-from alembic import op
 import sqlalchemy as sa
-from datetime import datetime
-
+from alembic import op
 
 # revision identifiers
 revision = "0021_seed_app_settings"
@@ -46,7 +44,6 @@ DEFAULT_SETTINGS = [
         "description": "Maximum discount code percentage",
         "default_value": "50",
     },
-    
     # === AI ===
     {
         "key": "ai.enabled",
@@ -72,7 +69,6 @@ DEFAULT_SETTINGS = [
         "description": "AI provider: ollama, gemini, openai",
         "default_value": "ollama",
     },
-    
     # === PROTOCOLS ===
     {
         "key": "protocols.default",
@@ -98,7 +94,6 @@ DEFAULT_SETTINGS = [
         "description": "Default flow for VLESS",
         "default_value": "xtls-rprx-vision",
     },
-    
     # === UX ===
     {
         "key": "ux.welcome_message",
@@ -124,7 +119,6 @@ DEFAULT_SETTINGS = [
         "description": "Enable maintenance mode (blocks purchases)",
         "default_value": "false",
     },
-    
     # === NOTIFICATIONS ===
     {
         "key": "notifications.expiry_hours",
@@ -150,7 +144,6 @@ DEFAULT_SETTINGS = [
         "description": "Notify admins on new purchases",
         "default_value": "true",
     },
-    
     # === SECURITY ===
     {
         "key": "security.rate_limit_per_minute",
@@ -168,7 +161,6 @@ DEFAULT_SETTINGS = [
         "description": "Auto-ban users who abuse rate limits",
         "default_value": "true",
     },
-    
     # === PAYMENTS ===
     {
         "key": "payments.min_wallet_topup",
@@ -186,7 +178,6 @@ DEFAULT_SETTINGS = [
         "description": "Hours before card payment expires",
         "default_value": "24",
     },
-    
     # === SYSTEM ===
     {
         "key": "system.usage_sync_interval",
@@ -212,29 +203,35 @@ def upgrade() -> None:
     conn = op.get_bind()
     inspector = sa.inspect(conn)
     columns = [c["name"] for c in inspector.get_columns("app_settings")]
-    
+
     if "setting_type" not in columns:
         op.add_column("app_settings", sa.Column("setting_type", sa.String(20), nullable=True))
         op.execute("UPDATE app_settings SET setting_type = 'string' WHERE setting_type IS NULL")
         op.alter_column("app_settings", "setting_type", nullable=False, server_default="string")
-    
+
     if "category" not in columns:
         op.add_column("app_settings", sa.Column("category", sa.String(50), nullable=True))
         op.execute("UPDATE app_settings SET category = '⚙️ System' WHERE category IS NULL")
         op.alter_column("app_settings", "category", nullable=False, server_default="⚙️ System")
-    
+
     if "description" not in columns:
-        op.add_column("app_settings", sa.Column("description", sa.String(255), nullable=True, server_default=""))
-    
+        op.add_column(
+            "app_settings",
+            sa.Column("description", sa.String(255), nullable=True, server_default=""),
+        )
+
     if "is_sensitive" not in columns:
-        op.add_column("app_settings", sa.Column("is_sensitive", sa.Boolean(), nullable=True, server_default="false"))
-    
+        op.add_column(
+            "app_settings",
+            sa.Column("is_sensitive", sa.Boolean(), nullable=True, server_default="false"),
+        )
+
     if "default_value" not in columns:
         op.add_column("app_settings", sa.Column("default_value", sa.Text(), nullable=True))
-    
+
     if "updated_by" not in columns:
         op.add_column("app_settings", sa.Column("updated_by", sa.BigInteger(), nullable=True))
-    
+
     # Insert default settings (skip if key exists)
     for setting in DEFAULT_SETTINGS:
         op.execute(
@@ -254,5 +251,5 @@ def downgrade() -> None:
             sa.text("DELETE FROM app_settings WHERE key = :key"),
             {"key": setting["key"]},
         )
-    
+
     # Don't drop columns - they might have user data

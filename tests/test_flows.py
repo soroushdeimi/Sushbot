@@ -782,7 +782,6 @@ class TestProtocolSelection:
         from database.models import PurchaseStatus, ServiceStatus
         from database.models.purchase import PurchaseType
         from database.models.service import ServiceType
-        from services.provisioning import provision_purchase
 
         # Create a purchase with user-selected protocol
         purchase = MagicMock()
@@ -798,11 +797,13 @@ class TestProtocolSelection:
         purchase.service_id = None
 
         # Mock database and panel operations
-        mock_db.get = AsyncMock(side_effect=lambda model, id_: {
-            "Product": multi_protocol_product,
-            "Panel": mock_panel,
-            "User": mock_user,
-        }.get(model.__name__))
+        mock_db.get = AsyncMock(
+            side_effect=lambda model, id_: {
+                "Product": multi_protocol_product,
+                "Panel": mock_panel,
+                "User": mock_user,
+            }.get(model.__name__)
+        )
 
         # Create a mock service that will be returned
         created_service = MagicMock()
@@ -812,8 +813,10 @@ class TestProtocolSelection:
         created_service.status = ServiceStatus.ACTIVE
         created_service.service_type = ServiceType.VPN
 
-        with patch("services.provisioning.PanelFactory") as mock_factory, \
-             patch("services.provisioning.check_panel_capacity", return_value=(True, None)):
+        with (
+            patch("services.provisioning.PanelFactory") as mock_factory,
+            patch("services.provisioning.check_panel_capacity", return_value=(True, None)),
+        ):
             mock_panel_service = AsyncMock()
             mock_panel_service.create_user = AsyncMock()
             mock_panel_service.generate_config_link = AsyncMock(return_value="vless://...")
@@ -848,7 +851,6 @@ class TestProtocolSelection:
         """
         from database.models import PurchaseStatus
         from database.models.purchase import PurchaseType
-        from services.fulfillment import fulfill_purchase
 
         # Create a purchase for a legacy single-protocol product
         purchase = MagicMock()
@@ -923,8 +925,6 @@ class TestProductModelProtocolMethods:
     def test_get_allowed_protocols_with_json_array(self):
         """Test parsing allowed_protocols JSON array."""
         import json
-
-        from database.models import Product
 
         # Create a minimal product-like object to test the logic
         class MockProduct:
@@ -1019,7 +1019,6 @@ class TestProductModelProtocolMethods:
 
     def test_supports_multiple_protocols_false_for_single(self):
         """Test that supports_multiple_protocols returns False for single-protocol products."""
-        import json
 
         class MockProduct:
             protocol = "vless"

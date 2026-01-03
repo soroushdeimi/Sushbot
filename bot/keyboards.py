@@ -113,35 +113,31 @@ def product_detail_keyboard_with_protocol(
     user: User | None = None,
 ) -> InlineKeyboardMarkup:
     """Product detail keyboard with pre-selected protocol.
-    
+
     This is shown after the user selects a protocol from a multi-protocol product.
     The confirm_purchase callback will include the protocol in its payload.
-    
+
     Args:
         product_id: The product ID
         protocol: The user-selected protocol (e.g., "vless")
         discount_code: Optional discount code
         user: Database user for i18n
-    
+
     Returns:
         InlineKeyboardMarkup for purchase confirmation
     """
     lang = get_user_language(user)
-    
+
     # Build confirm callback data with protocol
     # Format: confirm_purchase_{product_id}_proto_{protocol}[_{discount_code}]
     confirm_data = f"confirm_purchase_{product_id}_proto_{protocol}"
     if discount_code:
         confirm_data += f"_{discount_code}"
-    
+
     discount_enter_data = f"discount_enter_{product_id}_proto_{protocol}"
-    
+
     keyboard = [
-        [
-            InlineKeyboardButton(
-                "✅ " + t("purchase", user, lang), callback_data=confirm_data
-            )
-        ],
+        [InlineKeyboardButton("✅ " + t("purchase", user, lang), callback_data=confirm_data)],
         [
             InlineKeyboardButton(
                 "🎁 " + t("enter_discount_code", user, lang),
@@ -319,10 +315,10 @@ PROTOCOL_EMOJIS: dict[str, str] = {
 
 def get_protocol_display_name(protocol: str) -> str:
     """Get display name for a protocol with emoji.
-    
+
     Args:
         protocol: Protocol identifier (e.g., "vless", "vmess")
-    
+
     Returns:
         Display name with emoji (e.g., "⚡ VLESS")
     """
@@ -334,26 +330,26 @@ def get_protocol_display_name(protocol: str) -> str:
 def protocol_selection_keyboard(
     product_id: int,
     protocols: list[str],
-    user: "User | None" = None,
+    user: User | None = None,
     discount_code: str | None = None,
 ) -> InlineKeyboardMarkup:
     """Protocol selection keyboard for multi-protocol products.
-    
+
     This keyboard is shown when a product supports multiple VPN protocols,
     allowing the user to choose their preferred protocol before purchase.
-    
+
     Args:
         product_id: The product ID
         protocols: List of allowed protocols (e.g., ["vless", "vmess", "trojan"])
         user: Database user for i18n
         discount_code: Optional discount code to carry through
-    
+
     Returns:
         InlineKeyboardMarkup with protocol buttons
     """
     lang = get_user_language(user)
     keyboard: list[list[InlineKeyboardButton]] = []
-    
+
     for protocol in protocols:
         display_name = get_protocol_display_name(protocol)
         # Callback format: select_protocol_{product_id}_{protocol}[_{discount_code}]
@@ -361,8 +357,10 @@ def protocol_selection_keyboard(
         if discount_code:
             callback_data += f"_{discount_code}"
         keyboard.append([InlineKeyboardButton(display_name, callback_data=callback_data)])
-    
+
     # Back button
-    keyboard.append([InlineKeyboardButton(t("back", user, lang), callback_data=f"product_{product_id}")])
-    
+    keyboard.append(
+        [InlineKeyboardButton(t("back", user, lang), callback_data=f"product_{product_id}")]
+    )
+
     return InlineKeyboardMarkup(keyboard)

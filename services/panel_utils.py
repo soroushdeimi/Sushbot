@@ -12,11 +12,11 @@ from database.models import Panel, Service, ServiceStatus
 
 class VPNProtocol(str, Enum):
     """Supported VPN protocols with normalized lowercase values.
-    
+
     Panel APIs expect lowercase protocol names in most cases.
     This enum ensures consistent protocol naming across the codebase.
     """
-    
+
     VLESS = "vless"
     VMESS = "vmess"
     TROJAN = "trojan"
@@ -26,17 +26,17 @@ class VPNProtocol(str, Enum):
     HYSTERIA2 = "hysteria2"
     WIREGUARD = "wireguard"
     WG = "wg"  # Alias for wireguard
-    
+
     @classmethod
     def normalize(cls, protocol: str) -> str:
         """Normalize protocol name to lowercase and handle aliases.
-        
+
         Args:
             protocol: Raw protocol string (may be mixed case)
-        
+
         Returns:
             Normalized lowercase protocol name
-            
+
         Examples:
             >>> VPNProtocol.normalize("VLESS")
             'vless'
@@ -44,21 +44,21 @@ class VPNProtocol(str, Enum):
             'shadowsocks'
         """
         proto_lower = protocol.lower().strip()
-        
+
         # Handle aliases
         aliases = {
             "ss": "shadowsocks",
             "wg": "wireguard",
         }
         return aliases.get(proto_lower, proto_lower)
-    
+
     @classmethod
     def is_valid(cls, protocol: str) -> bool:
         """Check if a protocol string is a valid/known protocol.
-        
+
         Args:
             protocol: Protocol string to validate
-            
+
         Returns:
             True if protocol is known, False otherwise
         """
@@ -97,8 +97,11 @@ PROTOCOL_REQUIREMENTS: dict[str, dict] = {
         "default_flow": None,
         "alt_id_required": False,
         "encryption_methods": [
-            "aes-128-gcm", "aes-256-gcm", "chacha20-ietf-poly1305",
-            "2022-blake3-aes-128-gcm", "2022-blake3-aes-256-gcm",
+            "aes-128-gcm",
+            "aes-256-gcm",
+            "chacha20-ietf-poly1305",
+            "2022-blake3-aes-128-gcm",
+            "2022-blake3-aes-256-gcm",
             "2022-blake3-chacha20-poly1305",
         ],
     },
@@ -144,20 +147,20 @@ def validate_protocol_compatibility(
 ) -> tuple[bool, str | None]:
     """
     Validate that a protocol is compatible with the specified panel type.
-    
+
     This function prevents creating users with unsupported protocols before
     calling the panel API, saving time and providing better error messages.
-    
+
     Args:
         panel_type: Panel type (e.g., "marzban", "pasarguard")
         protocol: Protocol to validate (e.g., "vless", "vmess")
         strict: If True, raise error for unknown panel types. If False, allow unknown.
-        
+
     Returns:
         Tuple of (is_valid, error_message)
         - is_valid: True if protocol is compatible
         - error_message: None if valid, error description if not
-        
+
     Examples:
         >>> validate_protocol_compatibility("marzban", "vless")
         (True, None)
@@ -167,16 +170,16 @@ def validate_protocol_compatibility(
     # Normalize inputs
     panel_type_lower = panel_type.lower().strip()
     protocol_normalized = VPNProtocol.normalize(protocol)
-    
+
     # Check if panel type is known
     if panel_type_lower not in PANEL_SUPPORTED_PROTOCOLS:
         if strict:
             return False, f"Unknown panel type: '{panel_type}'"
         # For unknown panels, assume all protocols are supported
         return True, None
-    
+
     supported = PANEL_SUPPORTED_PROTOCOLS[panel_type_lower]
-    
+
     if protocol_normalized not in supported:
         supported_list = ", ".join(sorted(supported))
         return (
@@ -184,17 +187,17 @@ def validate_protocol_compatibility(
             f"Protocol '{protocol}' is not supported by panel type '{panel_type}'. "
             f"Supported protocols: {supported_list}",
         )
-    
+
     return True, None
 
 
 def get_protocol_params(protocol: str) -> dict | None:
     """
     Get protocol-specific parameters and requirements.
-    
+
     Args:
         protocol: Protocol name
-        
+
     Returns:
         Dictionary of protocol parameters, or None if protocol is unknown
     """
@@ -205,10 +208,10 @@ def get_protocol_params(protocol: str) -> dict | None:
 def get_panel_supported_protocols(panel_type: str) -> set[str]:
     """
     Get the set of protocols supported by a panel type.
-    
+
     Args:
         panel_type: Panel type name
-        
+
     Returns:
         Set of supported protocol names, or empty set if panel type is unknown
     """

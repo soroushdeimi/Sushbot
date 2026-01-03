@@ -848,7 +848,7 @@ async def product_callback(
     product_id: int,
 ) -> None:
     """Handle product selection callback.
-    
+
     If the product supports multiple protocols AND the protocol_selection
     feature is enabled, shows a protocol selection keyboard first.
     Otherwise, proceeds directly to purchase confirmation.
@@ -870,18 +870,24 @@ async def product_callback(
 
         db_user = await db.get(User, query.from_user.id)
         lang = get_user_language(db_user)
-        
-        traffic_text = f"{product.traffic_gb} GB" if product.traffic_gb > 0 else t("unlimited_traffic", db_user, lang)
-        
+
+        traffic_text = (
+            f"{product.traffic_gb} GB"
+            if product.traffic_gb > 0
+            else t("unlimited_traffic", db_user, lang)
+        )
+
         # Check if product supports multiple protocols
         allowed_protocols = product.get_allowed_protocols()
-        
+
         # Build protocol display text
         if product.supports_multiple_protocols:
             protocols_display = " / ".join([p.upper() for p in allowed_protocols])
         else:
-            protocols_display = allowed_protocols[0].upper() if allowed_protocols else product.protocol.upper()
-        
+            protocols_display = (
+                allowed_protocols[0].upper() if allowed_protocols else product.protocol.upper()
+            )
+
         product_text_i18n = (
             f"📦 {product.name}\n\n"
             f"💵 {t('price_toman', db_user, lang).format(amount=product.price)}\n"
@@ -890,13 +896,13 @@ async def product_callback(
             f"🔌 {protocols_display}\n\n"
             f"{product.description or t('no_description', db_user, lang)}\n\n"
         )
-        
+
         # Check if protocol selection feature is enabled
         protocol_selection_enabled = is_enabled("protocol_selection")
-        
+
         # If product supports multiple protocols AND feature is enabled, show protocol selection
         if product.supports_multiple_protocols and protocol_selection_enabled:
-            product_text_i18n += t('select_protocol', db_user, lang)
+            product_text_i18n += t("select_protocol", db_user, lang)
             await query.edit_message_text(
                 product_text_i18n,
                 reply_markup=protocol_selection_keyboard(
@@ -907,7 +913,7 @@ async def product_callback(
             )
         else:
             # Single protocol OR feature disabled - show standard purchase confirmation
-            product_text_i18n += t('purchase_confirmation', db_user, lang)
+            product_text_i18n += t("purchase_confirmation", db_user, lang)
             await query.edit_message_text(
                 product_text_i18n, reply_markup=product_detail_keyboard(product_id, db_user)
             )
@@ -919,9 +925,9 @@ async def select_protocol_callback(
     data: str,
 ) -> None:
     """Handle protocol selection for multi-protocol products.
-    
+
     Callback data format: select_protocol_{product_id}_{protocol}[_{discount_code}]
-    
+
     Stores the selected protocol in FSM state and proceeds to purchase confirmation.
     """
     query = update.callback_query
@@ -930,17 +936,17 @@ async def select_protocol_callback(
     user = update.effective_user
     if not user:
         return
-    
+
     # Parse callback data: select_protocol_{product_id}_{protocol}[_{discount_code}]
     parts = data.removeprefix("select_protocol_").split("_", 2)
     if len(parts) < 2:
         await query.edit_message_text("Invalid protocol selection.")
         return
-    
+
     product_id = int(parts[0])
     selected_protocol = parts[1].lower()
     discount_code = parts[2] if len(parts) > 2 else None
-    
+
     async for db in get_db():
         from database.models import Product
 
@@ -948,7 +954,7 @@ async def select_protocol_callback(
         if not product:
             await query.edit_message_text("Product not found.")
             return
-        
+
         # Validate that the selected protocol is allowed for this product
         allowed_protocols = product.get_allowed_protocols()
         if selected_protocol not in allowed_protocols:
@@ -956,16 +962,16 @@ async def select_protocol_callback(
                 f"Protocol '{selected_protocol}' is not available for this product."
             )
             return
-        
+
         db_user = await db.get(User, user.id)
         if not db_user:
             await query.edit_message_text("Please use /start first.")
             return
-        
+
         from utils.i18n import get_user_language, t
-        
+
         lang = get_user_language(db_user)
-        
+
         # Store the selected protocol in FSM state for later use during purchase creation
         await set_step(
             user.id,
@@ -976,12 +982,16 @@ async def select_protocol_callback(
                 "discount_code": discount_code,
             },
         )
-        
+
         # Show purchase confirmation with the selected protocol
         from bot.keyboards import product_detail_keyboard_with_protocol
-        
-        traffic_text = f"{product.traffic_gb} GB" if product.traffic_gb > 0 else t("unlimited_traffic", db_user, lang)
-        
+
+        traffic_text = (
+            f"{product.traffic_gb} GB"
+            if product.traffic_gb > 0
+            else t("unlimited_traffic", db_user, lang)
+        )
+
         confirmation_text = (
             f"📦 {product.name}\n\n"
             f"💵 {t('price_toman', db_user, lang).format(amount=product.price)}\n"
@@ -991,7 +1001,7 @@ async def select_protocol_callback(
             f"{product.description or t('no_description', db_user, lang)}\n\n"
             f"{t('purchase_confirmation', db_user, lang)}"
         )
-        
+
         await query.edit_message_text(
             confirmation_text,
             reply_markup=product_detail_keyboard_with_protocol(
@@ -1009,14 +1019,14 @@ async def discount_enter_callback_handler(
     data: str,
 ) -> None:
     """Route discount_enter callbacks to the appropriate handler.
-    
+
     Formats:
     - discount_enter_{product_id}
     - discount_enter_{product_id}_proto_{protocol}
     """
     # Parse callback data
     rest = data.removeprefix("discount_enter_")
-    
+
     protocol = None
     if "_proto_" in rest:
         parts = rest.split("_proto_", 1)
@@ -1024,7 +1034,7 @@ async def discount_enter_callback_handler(
         protocol = parts[1].lower() if len(parts) > 1 else None
     else:
         product_id = int(rest)
-    
+
     await discount_enter_callback(update, context, product_id, protocol)
 
 
@@ -1073,7 +1083,7 @@ async def confirm_purchase_callback_handler(
     data: str,
 ) -> None:
     """Route confirm_purchase callbacks to the appropriate handler.
-    
+
     Formats:
     - confirm_purchase_{product_id}
     - confirm_purchase_{product_id}_{discount_code}
@@ -1081,16 +1091,16 @@ async def confirm_purchase_callback_handler(
     - confirm_purchase_{product_id}_proto_{protocol}_{discount_code}
     """
     rest = data.removeprefix("confirm_purchase_")
-    
+
     protocol = None
     discount_code = None
-    
+
     if "_proto_" in rest:
         # Format with protocol
         parts = rest.split("_proto_", 1)
         product_id = int(parts[0])
         proto_and_maybe_discount = parts[1] if len(parts) > 1 else ""
-        
+
         # Check if there's a discount code after the protocol
         if "_" in proto_and_maybe_discount:
             proto_parts = proto_and_maybe_discount.split("_", 1)
@@ -1106,7 +1116,7 @@ async def confirm_purchase_callback_handler(
             discount_code = disc.strip() or None
         else:
             product_id = int(rest)
-    
+
     await confirm_purchase_callback(update, context, product_id, discount_code, protocol)
 
 
@@ -1118,7 +1128,7 @@ async def confirm_purchase_callback(
     selected_protocol: str | None = None,
 ) -> None:
     """Provision service immediately for the selected product.
-    
+
     Args:
         update: Telegram update
         context: Bot context

@@ -12,7 +12,6 @@ from integrations.exceptions import PanelError, PanelUserNotFoundError
 from integrations.marzban.api_client import MarzbanAPIClient
 from utils.retry import retry_with_backoff
 
-
 # Protocol name mappings for Marzban API compatibility
 # Marzban API expects lowercase protocol names
 MARZBAN_PROTOCOL_NAMES: dict[str, str] = {
@@ -28,12 +27,12 @@ MARZBAN_PROTOCOL_NAMES: dict[str, str] = {
 
 def normalize_protocol_for_marzban(protocol: str) -> str:
     """Normalize protocol name for Marzban API.
-    
+
     Marzban API expects lowercase protocol names in the proxies dict.
-    
+
     Args:
         protocol: Raw protocol string
-        
+
     Returns:
         Normalized protocol name for Marzban API
     """
@@ -81,24 +80,24 @@ class MarzbanService(VPNPanelInterface):
         flow: str = "xtls-rprx-vision",
     ) -> UserInfo:
         """Create a new user on Marzban panel.
-        
+
         Args:
             username: Username for the user
             expire_ts: Expiration timestamp (Unix)
             data_limit_bytes: Data limit in bytes
             protocol: Protocol type (vless, vmess, trojan, shadowsocks)
             flow: Flow type for VLESS (default: xtls-rprx-vision)
-            
+
         Returns:
             UserInfo with created user details
         """
         try:
             # CRITICAL: Normalize protocol to lowercase for Marzban API
             normalized_protocol = normalize_protocol_for_marzban(protocol)
-            
+
             # Marzban supports all protocols by default, but we can specify which ones to enable
             proxies: dict[str, Any] = {}
-            
+
             if normalized_protocol == "vless":
                 # VLESS requires flow parameter for XTLS/Reality
                 proxies["vless"] = {"flow": flow or "xtls-rprx-vision"}

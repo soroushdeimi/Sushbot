@@ -17,18 +17,18 @@ from .base import Base, TimestampMixin
 
 class SettingType(str, Enum):
     """Setting value types for proper casting."""
-    
+
     BOOL = "bool"
     INT = "int"
     FLOAT = "float"
     STRING = "string"
-    JSON = "json"      # Dict or List
-    LIST = "list"      # Comma-separated -> List[str]
+    JSON = "json"  # Dict or List
+    LIST = "list"  # Comma-separated -> List[str]
 
 
 class SettingCategory(str, Enum):
     """Setting categories for UI grouping."""
-    
+
     SALES = "💰 Sales"
     AI = "🤖 AI"
     SECURITY = "🛡️ Security"
@@ -42,15 +42,15 @@ class SettingCategory(str, Enum):
 class AppSetting(Base, TimestampMixin):
     """
     Dynamic application setting stored in database.
-    
+
     Replaces hardcoded values for runtime-changeable config.
     """
-    
+
     __tablename__ = "app_settings"
 
     key: Mapped[str] = mapped_column(String(100), primary_key=True)
     value: Mapped[str] = mapped_column(Text, nullable=False)
-    
+
     # Metadata
     setting_type: Mapped[str] = mapped_column(
         String(20),
@@ -67,19 +67,19 @@ class AppSetting(Base, TimestampMixin):
         nullable=False,
         default="",
     )
-    
+
     # Security & validation
     is_sensitive: Mapped[bool] = mapped_column(Boolean, default=False)
     default_value: Mapped[str | None] = mapped_column(Text, nullable=True)
-    
+
     # Audit
     updated_by: Mapped[int | None] = mapped_column(nullable=True)
-    
+
     def get_typed_value(self) -> Any:
         """Cast stored string to native Python type."""
         if not self.value:
             return self.default_value
-        
+
         try:
             if self.setting_type == "bool":
                 return self.value.lower() in ("true", "1", "yes", "on")
@@ -96,7 +96,7 @@ class AppSetting(Base, TimestampMixin):
             return self.value
         except (ValueError, json.JSONDecodeError):
             return self.value
-    
+
     def set_typed_value(self, value: Any) -> None:
         """Convert native Python value to string for storage."""
         if self.setting_type == "bool":
@@ -107,7 +107,7 @@ class AppSetting(Base, TimestampMixin):
             self.value = ", ".join(str(v) for v in value)
         else:
             self.value = str(value)
-    
+
     def validate(self, value: Any) -> tuple[bool, str | None]:
         """Validate value before setting."""
         try:
@@ -120,18 +120,17 @@ class AppSetting(Base, TimestampMixin):
             return True, None
         except (ValueError, json.JSONDecodeError) as e:
             return False, f"Invalid {self.setting_type}: {e}"
-    
+
     @property
     def display_value(self) -> str:
         """Get display-safe value (masks sensitive data)."""
         if self.is_sensitive and self.value:
             return "••••••••"
         return self.value or "(empty)"
-    
+
     @property
     def emoji(self) -> str:
         """Get status emoji for bools."""
         if self.setting_type == "bool":
             return "✅" if self.get_typed_value() else "❌"
         return "📝"
-
