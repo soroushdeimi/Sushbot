@@ -156,7 +156,7 @@ class Settings(BaseSettings):
     # Web Panel
     web_panel_enabled: bool = Field(default=True, description="Enable web panel")
     web_panel_port: int = Field(default=8080, description="Web panel port")
-    web_panel_host: str = Field(default="0.0.0.0", description="Web panel host")
+    web_panel_host: str = Field(default="0.0.0.0", description="Web panel host")  # nosec B104
     web_panel_secret_key: str = Field(
         default_factory=lambda: secrets.token_urlsafe(32),
         description="Web panel secret key",

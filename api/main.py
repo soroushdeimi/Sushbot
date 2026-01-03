@@ -85,7 +85,9 @@ async def limit_request_body_size(request, call_next):
 
                 return JSONResponse(
                     status_code=413,
-                    content={"detail": f"Request body too large. Max: {settings.max_request_body_bytes // (1024*1024)}MB"},
+                    content={
+                        "detail": f"Request body too large. Max: {settings.max_request_body_bytes // (1024 * 1024)}MB"
+                    },
                 )
         except ValueError:
             pass  # Invalid content-length header, let it proceed
