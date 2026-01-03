@@ -1,0 +1,281 @@
+"""PasarGuard panel integration for automated configuration creation."""
+
+from __future__ import annotations
+
+import uuid
+from typing import Any
+
+import httpx
+from loguru import logger
+
+from config.settings import settings
+
+
+class PasarGuardClient:
+    """Client for interacting with PasarGuard panel API."""
+
+    def __init__(
+        self,
+        api_url: str | None = None,
+        username: str | None = None,
+        password: str | None = None,
+        node_id: int | None = None,
+    ) -> None:
+        """Initialize PasarGuard client."""
+        # Use panel URL, not API URL
+        base_url = (api_url or settings.pasarguard_api_url).replace("/api", "").rstrip("/")
+        if not base_url.startswith("http"):
+            base_url = f"https://{base_url}"
+        self.api_url = f"{base_url}/panel/api"
+        self.base_url = base_url
+        self.username = username or getattr(settings, "pasarguard_username", "admin")
+        self.password = password or getattr(settings, "pasarguard_password", None)
+        self.node_id = node_id or settings.pasarguard_node_id
+        self._client: httpx.AsyncClient | None = None
+        self._cookies: dict[str, str] = {}
+        self._logged_in = False
+
+    async def _get_client(self) -> httpx.AsyncClient:
+        """Get or create HTTP client with session."""
+        if self._client is None:
+            self._client = httpx.AsyncClient(
+                timeout=30.0,
+                follow_redirects=True,
+                cookies=self._cookies,
+            )
+        return self._client
+
+    async def _ensure_login(self) -> None:
+        """Ensure we are logged in to PasarGuard."""
+        if self._logged_in:
+            return
+
+        if not self.password:
+            raise ValueError("PasarGuard password is required. Set PASARGUARD_PASSWORD in .env")
+
+        client = await self._get_client()
+        login_url = f"{self.base_url}/api/login"
+        
+        try:
+            response = await client.post(
+                login_url,
+                json={
+                    "username": self.username,
+                    "password": self.password,
+                },
+                headers={"Content-Type": "application/json"},
+            )
+            response.raise_for_status()
+            
+            # Store cookies from response
+            for cookie in response.cookies.jar:
+                self._cookies[cookie.name] = cookie.value
+            
+            # Update client cookies
+            if self._client:
+                self._client.cookies.update(self._cookies)
+            
+            self._logged_in = True
+            logger.info("Successfully logged in to PasarGuard")
+        except httpx.HTTPError as e:
+            logger.error(f"Failed to login to PasarGuard: {e}")
+            raise
+
+    async def _request(
+        self,
+        method: str,
+        endpoint: str,
+        data: dict[str, Any] | None = None,
+        params: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Make HTTP request to PasarGuard API."""
+        await self._ensure_login()
+        
+        url = f"{self.api_url}/{endpoint.lstrip('/')}"
+        client = await self._get_client()
+        
+        try:
+            response = await client.request(
+                method=method,
+                url=url,
+                json=data,
+                params=params,
+                headers={"Content-Type": "application/json"},
+            )
+            response.raise_for_status()
+            return response.json()
+        except httpx.HTTPError as e:
+            logger.error(f"PasarGuard API error: {e}")
+            if response.status_code == 401 or response.status_code == 403:
+                # Session expired, try to login again
+                self._logged_in = False
+                await self._ensure_login()
+                # Retry request
+                response = await client.request(
+                    method=method,
+                    url=url,
+                    json=data,
+                    params=params,
+                    headers={"Content-Type": "application/json"},
+                )
+                response.raise_for_status()
+                return response.json()
+            raise
+
+    async def create_inbound(
+        self,
+        protocol: str = "vless",
+        port: int = 8443,
+        remark: str | None = None,
+        stream_settings: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Create a new inbound in PasarGuard."""
+        data = {
+            "protocol": protocol,
+            "port": port,
+            "remark": remark or f"{protocol.upper()}-{port}",
+            "stream_settings": stream_settings or {},
+        }
+        return await self._request("POST", "/inbounds", data=data)
+
+    async def add_client(
+        self,
+        inbound_id: int,
+        email: str,
+        uuid: str | None = None,
+        flow: str = "xtls-rprx-vision",
+        enable: bool = True,
+        protocol: str | None = None,
+    ) -> dict[str, Any]:
+        """Add a client to an inbound."""
+        # Get protocol from inbound if not provided
+        if protocol is None:
+            inbound = await self.get_inbound(inbound_id)
+            protocol = inbound.get("protocol", "vless")
+
+        client_data = {
+            "email": email,
+            "id": uuid or str(uuid.uuid4()),
+            "enable": enable,
+        }
+        
+        # Add flow only for vless protocol
+        if protocol == "vless":
+            client_data["flow"] = flow
+
+        return await self._request("POST", f"/inbounds/{inbound_id}/clients", data=client_data)
+
+    async def get_inbound(self, inbound_id: int) -> dict[str, Any]:
+        """Get inbound details."""
+        return await self._request("GET", f"/inbounds/{inbound_id}")
+
+    async def get_client_config(
+        self,
+        inbound_id: int,
+        client_email: str,
+    ) -> dict[str, Any]:
+        """Get client configuration."""
+        inbound = await self.get_inbound(inbound_id)
+        clients = inbound.get("clients", [])
+        client = next((c for c in clients if c.get("email") == client_email), None)
+        if not client:
+            raise ValueError(f"Client {client_email} not found in inbound {inbound_id}")
+        return client
+
+    async def generate_config_link(
+        self,
+        inbound_id: int,
+        client_email: str,
+        protocol: str = "vless",
+    ) -> str:
+        """Generate configuration link for client."""
+        inbound = await self.get_inbound(inbound_id)
+        client_config = await self.get_client_config(inbound_id, client_email)
+
+        # Extract server details from inbound
+        server_address = settings.pasarguard_api_url.split("//")[1].split(":")[0]
+        port = inbound.get("port", 8443)
+
+        # Generate config link based on protocol
+        if protocol == "vless":
+            client_id = client_config.get("id")
+            flow = client_config.get("flow", "")
+            config = f"vless://{client_id}@{server_address}:{port}?flow={flow}&encryption=none#{client_email}"
+            return config
+
+        # Add other protocol support here
+        raise ValueError(f"Unsupported protocol: {protocol}")
+
+    async def update_client_traffic(
+        self,
+        inbound_id: int,
+        client_email: str,
+        upload: int = 0,
+        download: int = 0,
+    ) -> dict[str, Any]:
+        """Update client traffic stats."""
+        data = {
+            "email": client_email,
+            "upload": upload,
+            "download": download,
+        }
+        return await self._request("PUT", f"/inbounds/{inbound_id}/clients/{client_email}/stats", data=data)
+
+    async def delete_client(self, inbound_id: int, client_email: str) -> dict[str, Any]:
+        """Delete a client from inbound."""
+        return await self._request("DELETE", f"/inbounds/{inbound_id}/clients/{client_email}")
+
+    async def get_node_status(self, node_id: int | None = None) -> dict[str, Any]:
+        """Get node status."""
+        node_id = node_id or self.node_id
+        return await self._request("GET", f"/nodes/{node_id}/status")
+
+
+async def create_service_config(
+    user_email: str,
+    protocol: str = "vless",
+    port: int = 8443,
+    duration_days: int = 30,
+    traffic_gb: int = 0,
+    panel_id: int = 1,
+) -> dict[str, Any]:
+    """Create a complete service configuration."""
+    client = PasarGuardClient()
+    client_uuid = str(uuid.uuid4())
+
+    # Create or use existing inbound
+    remark = f"{protocol.upper()}-{port}-AUTO"
+    inbound_data = await client.create_inbound(
+        protocol=protocol,
+        port=port,
+        remark=remark,
+    )
+    inbound_id = inbound_data.get("id")
+
+    # Add client to inbound
+    flow = "xtls-rprx-vision" if protocol == "vless" else ""
+    client_data = await client.add_client(
+        inbound_id=inbound_id,
+        email=user_email,
+        uuid=client_uuid,
+        flow=flow,
+        protocol=protocol,
+    )
+
+    # Generate config link
+    config_link = await client.generate_config_link(
+        inbound_id=inbound_id,
+        client_email=user_email,
+        protocol=protocol,
+    )
+
+    return {
+        "inbound_id": inbound_id,
+        "client_email": user_email,
+        "client_uuid": client_uuid,
+        "config_link": config_link,
+        "protocol": protocol,
+        "port": port,
+        "panel_id": panel_id,
+    }
+

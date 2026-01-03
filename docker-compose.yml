@@ -1,0 +1,81 @@
+services:
+  sushbotseller:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sushbotseller-bot
+    restart: unless-stopped
+    user: "1001:1001"
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    env_file:
+      - .env
+    environment:
+      # Override database URL to use existing postgres container
+      # Note: DB_PASSWORD must be set in .env file or as environment variable
+      - DATABASE_URL=postgresql+asyncpg://postgres:${DB_PASSWORD:-changeme}@pasarguard-postgresql-1:5432/sushbotseller
+      # Enable new purchase/payment flow (Phase 4+) and background usage sync
+      - SUBSCRIPTION_VERSION=true
+      - USAGE_SYNC_ENABLED=true
+      - USAGE_SYNC_INTERVAL_SECONDS=300
+      - USAGE_SYNC_BATCH_SIZE=50
+      # Subscription links (bot-hosted). Uses host from PasarGuard hosts table.
+      - PUBLIC_BASE_URL=https://your-domain.com
+      # Card-to-card payment settings
+      - CARD_TO_CARD_NUMBER=
+      - CARD_TO_CARD_OWNER=
+      # Payment gateways: only card-to-card enabled
+      - FEATURE_PAY_CARD_TO_CARD=true
+      - FEATURE_PAY_NOWPAYMENTS=false
+      - FEATURE_PAY_AQAYEPARDAKHT=false
+      # Disable phone verification
+      - FEATURE_PHONE_VERIFICATION=false
+      - FEATURE_REQUIRE_PHONE_FOR_PURCHASE=false
+      - FEATURE_REQUIRE_PHONE_FOR_TRIAL=false
+      # Trial: 5GB for 30 days
+      - TRIAL_DURATION_DAYS=30
+      - TRIAL_TRAFFIC_GB=5
+    networks:
+      - pasarguard_pg_backend
+    volumes:
+      - ./logs:/app/logs:rw
+    tmpfs:
+      - /tmp:size=64M,mode=1777
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f 'bot.main' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  sushbotseller-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sushbotseller-api
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # Note: DB_PASSWORD must be set in .env file or as environment variable
+      - DATABASE_URL=postgresql+asyncpg://postgres:${DB_PASSWORD:-changeme}@pasarguard-postgresql-1:5432/sushbotseller
+      - PUBLIC_BASE_URL=${PUBLIC_BASE_URL:-https://your-domain.com}
+      - RUN_MIGRATIONS_ON_STARTUP=false
+    command: ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8080"]
+    ports:
+      - "8080:8080"
+    networks:
+      - pasarguard_pg_backend
+    volumes:
+      - ./logs:/app/logs
+
+networks:
+  pasarguard_pg_backend:
+    external: true
+

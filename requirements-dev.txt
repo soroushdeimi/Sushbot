@@ -1,0 +1,21 @@
+# Development Dependencies
+-r requirements.txt
+
+# Testing
+pytest>=8.3.0,<9.0.0
+pytest-asyncio>=0.24.0,<1.0.0
+pytest-cov>=6.0.0,<7.0.0
+pytest-xdist>=3.5.0,<4.0.0
+hypothesis>=6.115.0,<7.0.0
+aiosqlite>=0.20.0,<1.0.0  
+# Code Quality
+ruff>=0.8.0,<1.0.0
+mypy>=1.13.0,<2.0.0
+bandit[toml]>=1.8.0,<2.0.0
+pre-commit>=4.0.0,<5.0.0
+
+# Type stubs
+types-redis>=4.6.0
+types-passlib>=1.7.0
+types-python-jose>=3.3.4
+

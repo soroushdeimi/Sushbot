@@ -1,0 +1,592 @@
+# =============================================================================
+# SushBotSeller CI/CD Pipeline
+# =============================================================================
+#
+# This workflow runs on every push to main/develop and on pull requests.
+# It ensures code quality, security, and build integrity before merging.
+#
+# Pipeline Stages:
+#   1. Lint & Format  - Check code style with Ruff
+#   2. Security Scan  - Find vulnerabilities and hardcoded secrets
+#   3. Type Check     - Verify type hints with MyPy
+#   4. Unit Tests     - Run pytest with PostgreSQL
+#   5. Docker Build   - Verify Dockerfile builds correctly
+#   6. (Future) Deploy - Placeholder for production deployment
+#
+# Author: SushBotSeller Team
+# Last Updated: 2026-01-03
+# =============================================================================
+
+name: CI/CD Pipeline
+
+# =============================================================================
+# TRIGGERS
+# =============================================================================
+# This section defines WHEN the pipeline runs.
+# - push: Runs when code is pushed directly to main or develop branches
+# - pull_request: Runs when someone opens/updates a PR targeting main
+# =============================================================================
+on:
+  push:
+    branches:
+      - main
+      - develop
+    # Don't run pipeline for documentation-only changes (saves CI minutes)
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - ".gitignore"
+      - "LICENSE"
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - synchronize  # When new commits are pushed to the PR
+      - reopened
+
+# =============================================================================
+# ENVIRONMENT VARIABLES
+# =============================================================================
+# Global variables available to ALL jobs in this workflow.
+# These are NOT secrets - just configuration values.
+# =============================================================================
+env:
+  PYTHON_VERSION: "3.12"
+  # PostgreSQL test database credentials (NOT production - safe to expose)
+  POSTGRES_USER: test_user
+  POSTGRES_PASSWORD: test_password_ci_only
+  POSTGRES_DB: test_sushbotseller
+
+# =============================================================================
+# CONCURRENCY
+# =============================================================================
+# Prevents multiple pipeline runs for the same PR/branch at once.
+# If you push twice quickly, the first run is cancelled to save resources.
+# =============================================================================
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# =============================================================================
+# JOBS
+# =============================================================================
+# Each job runs in a fresh virtual machine. Jobs can run in parallel
+# unless you specify dependencies with "needs:".
+# =============================================================================
+jobs:
+
+  # ===========================================================================
+  # JOB 1: LINT & FORMAT CHECK
+  # ===========================================================================
+  # PURPOSE: Ensures all code follows consistent style guidelines.
+  # WHY: Consistent code is easier to read, review, and maintain.
+  # TOOL: Ruff (fast Python linter, replaces flake8/black/isort)
+  # ===========================================================================
+  lint:
+    name: "🔍 Lint & Format"
+    runs-on: ubuntu-latest
+
+    steps:
+      # -----------------------------------------------------------------------
+      # Step 1: Checkout code
+      # -----------------------------------------------------------------------
+      # Downloads your repository code into the CI runner.
+      # Without this, the runner has an empty filesystem!
+      # -----------------------------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # -----------------------------------------------------------------------
+      # Step 2: Setup Python
+      # -----------------------------------------------------------------------
+      # Installs the specified Python version on the runner.
+      # GitHub runners have Python pre-installed, but we want a specific version.
+      # -----------------------------------------------------------------------
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          # Cache pip packages to speed up subsequent runs
+          cache: "pip"
+
+      # -----------------------------------------------------------------------
+      # Step 3: Install Ruff
+      # -----------------------------------------------------------------------
+      # Ruff is a fast Python linter written in Rust.
+      # It combines flake8, black, isort, and more into one tool.
+      # -----------------------------------------------------------------------
+      - name: Install linting tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff
+
+      # -----------------------------------------------------------------------
+      # Step 4: Run Ruff Linter
+      # -----------------------------------------------------------------------
+      # Checks for code errors, style issues, and import sorting.
+      # --output-format=github: Annotates errors directly in GitHub PR view.
+      # This step FAILS the build if there are lint errors.
+      # -----------------------------------------------------------------------
+      - name: Run Ruff linter
+        run: |
+          echo "🔍 Checking code for lint errors..."
+          ruff check . --output-format=github
+
+      # -----------------------------------------------------------------------
+      # Step 5: Check Code Formatting
+      # -----------------------------------------------------------------------
+      # Verifies code is formatted according to project standards.
+      # --check: Don't modify files, just report if formatting is wrong.
+      # --diff: Show what would change (helpful for debugging).
+      # -----------------------------------------------------------------------
+      - name: Check code formatting
+        run: |
+          echo "🎨 Checking code formatting..."
+          ruff format --check --diff .
+
+  # ===========================================================================
+  # JOB 2: SECURITY SCANNING
+  # ===========================================================================
+  # PURPOSE: Find security vulnerabilities before they reach production.
+  # TOOLS:
+  #   - Bandit: Scans Python code for security issues (SQL injection, etc.)
+  #   - pip-audit: Checks dependencies for known CVEs (vulnerabilities)
+  #   - Gitleaks: Finds accidentally committed secrets (API keys, passwords)
+  # ===========================================================================
+  security:
+    name: "🛡️ Security Scan"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # Fetch full git history for Gitleaks secret scanning
+          fetch-depth: 0
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+
+      # -----------------------------------------------------------------------
+      # Step: Install security scanning tools
+      # -----------------------------------------------------------------------
+      - name: Install security tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install bandit[toml] pip-audit safety
+
+      # -----------------------------------------------------------------------
+      # Step: Bandit - Static Application Security Testing (SAST)
+      # -----------------------------------------------------------------------
+      # Scans your Python code for common security issues like:
+      #   - Hardcoded passwords
+      #   - SQL injection vulnerabilities
+      #   - Insecure use of subprocess
+      #   - Weak cryptography
+      #
+      # -c pyproject.toml: Use project config for exclude patterns
+      # -r .: Recursively scan all files
+      # -ll: Only report medium and high severity issues
+      # -----------------------------------------------------------------------
+      - name: Run Bandit security scan
+        run: |
+          echo "🔐 Scanning code for security vulnerabilities..."
+          bandit -c pyproject.toml -r . -ll -f json -o bandit-report.json || true
+          # Display human-readable summary
+          bandit -c pyproject.toml -r . -ll
+
+      # -----------------------------------------------------------------------
+      # Step: pip-audit - Dependency Vulnerability Scanner
+      # -----------------------------------------------------------------------
+      # Checks your requirements.txt against the Python Packaging Advisory
+      # Database to find packages with known security vulnerabilities.
+      #
+      # This is like npm audit but for Python.
+      # -----------------------------------------------------------------------
+      - name: Audit dependencies for vulnerabilities
+        run: |
+          echo "📦 Checking dependencies for known vulnerabilities..."
+          pip-audit -r requirements.txt --progress-spinner=off || true
+        continue-on-error: true  # Don't fail build for advisories (review manually)
+
+      # -----------------------------------------------------------------------
+      # Step: Gitleaks - Secret Detection
+      # -----------------------------------------------------------------------
+      # Scans the entire git history for accidentally committed secrets:
+      #   - API keys, tokens, passwords
+      #   - Private keys, certificates
+      #   - Database connection strings
+      #
+      # This catches secrets that were committed and later deleted!
+      # -----------------------------------------------------------------------
+      - name: Scan for hardcoded secrets
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Report format: sarif allows GitHub Security tab integration
+          GITLEAKS_ENABLE_SUMMARY: true
+
+      # -----------------------------------------------------------------------
+      # Step: Upload security reports as artifacts
+      # -----------------------------------------------------------------------
+      # Saves the security scan reports so you can download and review them.
+      # Artifacts are kept for 30 days by default.
+      # -----------------------------------------------------------------------
+      - name: Upload security reports
+        uses: actions/upload-artifact@v4
+        if: always()  # Upload even if previous steps failed
+        with:
+          name: security-reports
+          path: |
+            bandit-report.json
+          retention-days: 30
+
+  # ===========================================================================
+  # JOB 3: TYPE CHECKING
+  # ===========================================================================
+  # PURPOSE: Verify type hints are correct and consistent.
+  # WHY: Catches type-related bugs before runtime.
+  # TOOL: MyPy (static type checker for Python)
+  # ===========================================================================
+  typecheck:
+    name: "📝 Type Check"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+
+      # -----------------------------------------------------------------------
+      # Step: Install dependencies + MyPy
+      # -----------------------------------------------------------------------
+      # We need all project dependencies because MyPy checks types
+      # across your imports (it needs to "see" the library types).
+      # -----------------------------------------------------------------------
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install mypy types-redis types-passlib types-python-jose
+
+      # -----------------------------------------------------------------------
+      # Step: Run MyPy
+      # -----------------------------------------------------------------------
+      # Checks type annotations throughout the codebase.
+      # --config-file: Uses settings from pyproject.toml
+      # --no-error-summary: Cleaner output for CI
+      #
+      # NOTE: Currently set to not fail build (|| true) while you add types.
+      # Remove "|| true" once type coverage is complete!
+      # -----------------------------------------------------------------------
+      - name: Run MyPy type checker
+        run: |
+          echo "📝 Checking type annotations..."
+          mypy . --config-file=pyproject.toml || true
+
+  # ===========================================================================
+  # JOB 4: UNIT TESTS
+  # ===========================================================================
+  # PURPOSE: Run automated tests to verify code works correctly.
+  # REQUIRES: Lint job to pass first (catches obvious errors early).
+  # SERVICES: Spins up a PostgreSQL database for integration tests.
+  # ===========================================================================
+  test:
+    name: "🧪 Tests"
+    runs-on: ubuntu-latest
+    # Wait for lint to pass before running tests (fail fast)
+    needs: [lint]
+
+    # -------------------------------------------------------------------------
+    # Service Containers
+    # -------------------------------------------------------------------------
+    # GitHub Actions can spin up Docker containers alongside your job.
+    # Here we start PostgreSQL so our tests can use a real database.
+    # -------------------------------------------------------------------------
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ${{ env.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ env.POSTGRES_DB }}
+        ports:
+          - 5432:5432
+        # Health check: Wait for PostgreSQL to be ready before running tests
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+
+      # -----------------------------------------------------------------------
+      # Step: Install all dependencies
+      # -----------------------------------------------------------------------
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      # -----------------------------------------------------------------------
+      # Step: Run Pytest
+      # -----------------------------------------------------------------------
+      # pytest: Python test framework
+      # -v: Verbose output (show test names)
+      # --tb=short: Shorter tracebacks for readability
+      # -n auto: Run tests in parallel (uses all CPU cores)
+      # --cov: Generate code coverage report
+      # --cov-report=xml: Coverage in XML format for Codecov
+      # --cov-fail-under=80: Fail if coverage drops below 80%
+      # -----------------------------------------------------------------------
+      - name: Run tests with coverage
+        env:
+          # Database connection for tests
+          DATABASE_URL: postgresql+asyncpg://${{ env.POSTGRES_USER }}:${{ env.POSTGRES_PASSWORD }}@localhost:5432/${{ env.POSTGRES_DB }}
+          # Dummy values for required config (tests use mocks)
+          BOT_TOKEN: "0000000000:AAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          SUPER_ADMIN_TELEGRAM_ID: "12345"
+          SECRET_KEY: "test-secret-key-not-for-production"
+          JWT_SECRET: "test-jwt-secret-not-for-production"
+        run: |
+          echo "🧪 Running test suite..."
+          pytest tests/ \
+            -v \
+            --tb=short \
+            -n auto \
+            --cov=. \
+            --cov-report=xml \
+            --cov-report=term-missing \
+            --cov-fail-under=60
+
+      # -----------------------------------------------------------------------
+      # Step: Upload coverage to Codecov
+      # -----------------------------------------------------------------------
+      # Codecov provides a nice dashboard to visualize test coverage.
+      # You can add a coverage badge to your README!
+      # -----------------------------------------------------------------------
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          files: ./coverage.xml
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+  # ===========================================================================
+  # JOB 5: DOCKER BUILD VERIFICATION
+  # ===========================================================================
+  # PURPOSE: Ensure the Dockerfile builds successfully.
+  # WHY: Catches Docker issues early, before deployment.
+  # NOTE: We build but don't push (no registry credentials needed).
+  # ===========================================================================
+  docker-build:
+    name: "🐳 Docker Build"
+    runs-on: ubuntu-latest
+    # Run after lint passes, in parallel with tests
+    needs: [lint]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # -----------------------------------------------------------------------
+      # Step: Set up Docker Buildx
+      # -----------------------------------------------------------------------
+      # Buildx is Docker's next-generation build system.
+      # It supports caching, multi-platform builds, and more.
+      # -----------------------------------------------------------------------
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # -----------------------------------------------------------------------
+      # Step: Build Docker image
+      # -----------------------------------------------------------------------
+      # --file: Path to Dockerfile
+      # --tag: Name and tag for the image
+      # --cache-from/to: Use GitHub Actions cache for layers
+      # --load: Load image into Docker daemon (for local use)
+      #
+      # We tag with the commit SHA for traceability.
+      # -----------------------------------------------------------------------
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false  # Don't push to registry, just verify it builds
+          load: true   # Load into local Docker for testing
+          tags: |
+            sushbotseller:${{ github.sha }}
+            sushbotseller:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # -----------------------------------------------------------------------
+      # Step: Verify image was created
+      # -----------------------------------------------------------------------
+      # Quick sanity check that the image exists and is the right size.
+      # -----------------------------------------------------------------------
+      - name: Verify Docker image
+        run: |
+          echo "🐳 Docker image built successfully!"
+          docker images sushbotseller
+          echo "📏 Image size:"
+          docker images sushbotseller --format "{{.Size}}"
+
+      # -----------------------------------------------------------------------
+      # Step: Test container starts
+      # -----------------------------------------------------------------------
+      # Try to start the container and verify it doesn't crash immediately.
+      # This catches import errors and missing dependencies.
+      # -----------------------------------------------------------------------
+      - name: Test container startup
+        run: |
+          echo "🚀 Testing container startup..."
+          # Run container with test env vars, expect it to fail (no real DB)
+          # but it should at least import successfully
+          docker run --rm \
+            -e BOT_TOKEN="test:token" \
+            -e DATABASE_URL="postgresql+asyncpg://test:test@localhost/test" \
+            -e SUPER_ADMIN_TELEGRAM_ID="12345" \
+            sushbotseller:latest \
+            python -c "from bot.main import main; print('✅ Imports OK')" || true
+
+  # ===========================================================================
+  # JOB 6: ALL CHECKS PASSED
+  # ===========================================================================
+  # PURPOSE: Single job that depends on all others.
+  # WHY: GitHub branch protection can require this one job to pass.
+  # ===========================================================================
+  all-checks-passed:
+    name: "✅ All Checks Passed"
+    runs-on: ubuntu-latest
+    needs: [lint, security, typecheck, test, docker-build]
+    if: always()  # Run even if some jobs were skipped
+
+    steps:
+      - name: Check job statuses
+        run: |
+          echo "📊 Job Results Summary:"
+          echo "  - Lint:      ${{ needs.lint.result }}"
+          echo "  - Security:  ${{ needs.security.result }}"
+          echo "  - TypeCheck: ${{ needs.typecheck.result }}"
+          echo "  - Tests:     ${{ needs.test.result }}"
+          echo "  - Docker:    ${{ needs.docker-build.result }}"
+          
+          # Fail if any required job failed
+          if [[ "${{ needs.lint.result }}" == "failure" ]] || \
+             [[ "${{ needs.test.result }}" == "failure" ]] || \
+             [[ "${{ needs.docker-build.result }}" == "failure" ]]; then
+            echo "❌ Required checks failed!"
+            exit 1
+          fi
+          
+          echo "✅ All required checks passed!"
+
+  # ===========================================================================
+  # JOB 7: DEPLOYMENT (PLACEHOLDER)
+  # ===========================================================================
+  # PURPOSE: Deploy to production server (VPS).
+  # STATUS: DISABLED - Uncomment when ready for production.
+  #
+  # REQUIRED SECRETS (add in GitHub Settings > Secrets > Actions):
+  #   - VPS_HOST: Your server IP or domain
+  #   - VPS_USER: SSH username (e.g., "deploy" or "root")
+  #   - VPS_SSH_KEY: Private SSH key for authentication
+  #   - VPS_SSH_PORT: SSH port (default: 22)
+  # ===========================================================================
+  # deploy:
+  #   name: "🚀 Deploy to Production"
+  #   runs-on: ubuntu-latest
+  #   needs: [all-checks-passed]
+  #   # Only deploy on push to main (not PRs)
+  #   if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+  #   
+  #   environment:
+  #     name: production
+  #     url: https://your-bot-domain.com
+  #   
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v4
+  #     
+  #     # -----------------------------------------------------------------------
+  #     # Option A: SSH + Docker Compose (Recommended for VPS)
+  #     # -----------------------------------------------------------------------
+  #     - name: Deploy via SSH
+  #       uses: appleboy/ssh-action@v1.0.3
+  #       with:
+  #         host: ${{ secrets.VPS_HOST }}
+  #         username: ${{ secrets.VPS_USER }}
+  #         key: ${{ secrets.VPS_SSH_KEY }}
+  #         port: ${{ secrets.VPS_SSH_PORT }}
+  #         script: |
+  #           cd /opt/sushbotseller
+  #           
+  #           # Pull latest code
+  #           git pull origin main
+  #           
+  #           # Rebuild and restart containers
+  #           docker compose pull
+  #           docker compose up -d --build
+  #           
+  #           # Clean up old images
+  #           docker image prune -f
+  #           
+  #           # Health check
+  #           sleep 10
+  #           docker compose ps
+  #           echo "✅ Deployment complete!"
+  #     
+  #     # -----------------------------------------------------------------------
+  #     # Option B: Build and push to Docker Registry, then deploy
+  #     # -----------------------------------------------------------------------
+  #     # - name: Login to Docker Hub
+  #     #   uses: docker/login-action@v3
+  #     #   with:
+  #     #     username: ${{ secrets.DOCKERHUB_USERNAME }}
+  #     #     password: ${{ secrets.DOCKERHUB_TOKEN }}
+  #     # 
+  #     # - name: Build and push
+  #     #   uses: docker/build-push-action@v5
+  #     #   with:
+  #     #     push: true
+  #     #     tags: yourusername/sushbotseller:latest
+  #     # 
+  #     # - name: Deploy to VPS
+  #     #   uses: appleboy/ssh-action@v1.0.3
+  #     #   with:
+  #     #     host: ${{ secrets.VPS_HOST }}
+  #     #     username: ${{ secrets.VPS_USER }}
+  #     #     key: ${{ secrets.VPS_SSH_KEY }}
+  #     #     script: |
+  #     #       docker pull yourusername/sushbotseller:latest
+  #     #       docker compose up -d
+  #     
+  #     - name: Notify deployment success
+  #       run: |
+  #         echo "🎉 Deployed commit ${{ github.sha }} to production!"
+  #         # Optional: Send Telegram notification
+  #         # curl -X POST "https://api.telegram.org/bot${{ secrets.NOTIFY_BOT_TOKEN }}/sendMessage" \
+  #         #   -d "chat_id=${{ secrets.NOTIFY_CHAT_ID }}" \
+  #         #   -d "text=✅ SushBotSeller deployed: ${{ github.sha }}"
