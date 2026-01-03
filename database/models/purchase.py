@@ -12,10 +12,10 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .base import Base, TimestampMixin
 
 if TYPE_CHECKING:
-    from .user import User
-    from .service import Service
     from .payment import Payment
     from .product import Product
+    from .service import Service
+    from .user import User
 
 
 class PurchaseStatus(str, Enum):
@@ -67,10 +67,10 @@ class Purchase(Base, TimestampMixin):
     cancelled_at: Mapped[datetime | None] = mapped_column(nullable=True)
 
     # Relationships
-    user: Mapped["User"] = relationship("User", back_populates="purchases")
-    product: Mapped["Product | None"] = relationship("Product", back_populates="purchases")
-    service: Mapped["Service | None"] = relationship("Service", back_populates="purchases")
-    payments: Mapped[list["Payment"]] = relationship("Payment", back_populates="purchase", lazy="selectin")
+    user: Mapped[User] = relationship("User", back_populates="purchases")
+    product: Mapped[Product | None] = relationship("Product", back_populates="purchases")
+    service: Mapped[Service | None] = relationship("Service", back_populates="purchases")
+    payments: Mapped[list[Payment]] = relationship("Payment", back_populates="purchase", lazy="selectin")
 
     def __repr__(self) -> str:
         return f"<Purchase(id={self.id}, user_id={self.user_id}, status={self.status})>"

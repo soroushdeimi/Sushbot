@@ -20,10 +20,10 @@ def make_panel_username(*, telegram_username: str | None, user_id: int, suffix: 
         telegram_clean = telegram_username.strip().lstrip("@").lower()
         telegram_clean = _SAFE_RE.sub("_", telegram_clean)
         telegram_clean = telegram_clean.strip("._-") or f"user_{int(user_id)}"
-        
+
         # Format: <telegram_username>-<user_id>-<suffix>
         base = f"{telegram_clean}-{int(user_id)}-{suffix}"
-    
+
     # Truncate to 128 chars max (PasarGuard username limit)
     if len(base) > 128:
         # Truncate from the front (telegram username part) while preserving suffix
@@ -35,7 +35,7 @@ def make_panel_username(*, telegram_username: str | None, user_id: int, suffix: 
         else:
             # If suffix itself is too long, just use minimal format
             base = f"user_{int(user_id)}_{suffix}"[:128]
-    
+
     return base
 
 

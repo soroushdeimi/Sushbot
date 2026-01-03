@@ -7,9 +7,9 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from database.models import Admin, User
 from database.session import get_db
-from database.models import User, Admin
-from utils.security import verify_password, generate_token
+from utils.security import generate_token, verify_password
 
 router = APIRouter()
 

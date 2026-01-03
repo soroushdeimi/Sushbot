@@ -5,16 +5,16 @@ from __future__ import annotations
 import uuid
 
 from loguru import logger
-from telegram import Update
-from telegram.ext import Application, ContextTypes, MessageHandler, filters
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from telegram import Update
+from telegram.ext import Application, ContextTypes, MessageHandler, filters
 
-from config.features import is_enabled
 from database.models import (
     Admin,
     Payment,
     PaymentStatus,
+    Purchase,
     SupportMessage,
     SupportMessageType,
     SupportSender,
@@ -61,9 +61,9 @@ async def text_message_handler(update: Update, context: ContextTypes.DEFAULT_TYP
     # Wallet topup amount flow
     if st and st.step == "wallet.entering_topup_amount":
         async for db in get_db():
-            from database.models import User, Purchase
-            from database.models.purchase import PurchaseStatus, PurchaseType
             from bot.keyboards import payment_gateway_keyboard
+            from database.models import Purchase, User
+            from database.models.purchase import PurchaseStatus, PurchaseType
             from utils.i18n import get_user_language, t
 
             db_user = await db.get(User, user.id)
@@ -112,9 +112,9 @@ async def text_message_handler(update: Update, context: ContextTypes.DEFAULT_TYP
     # Discount code input flow
     if st and st.step == "purchase.entering_discount":
         async for db in get_db():
+            from bot.keyboards import purchase_with_discount_keyboard
             from database.models import Product, User
             from services.discount import validate_and_apply_discount
-            from bot.keyboards import purchase_with_discount_keyboard
             from utils.i18n import get_user_language, t
 
             db_user = await db.get(User, user.id)
@@ -177,8 +177,7 @@ async def text_message_handler(update: Update, context: ContextTypes.DEFAULT_TYP
     if st and st.step and st.step.startswith("admin.add_panel."):
         async for db in get_db():
             from handlers.commands import _require_admin
-            from database.models import Panel, PanelStatus, PanelType
-            from services.state_machine import set_step, clear_state
+            from services.state_machine import set_step
             from utils.encryption import encrypt_panel_credentials
 
             admin = await _require_admin(db, user.id)
@@ -234,7 +233,7 @@ async def text_message_handler(update: Update, context: ContextTypes.DEFAULT_TYP
                 credentials = text.strip()
                 # Encrypt credentials before storing
                 encrypted_credentials = encrypt_panel_credentials(credentials) if credentials else ""
-                
+
                 # Parse username:password if applicable
                 username = None
                 password = None
@@ -243,11 +242,11 @@ async def text_message_handler(update: Update, context: ContextTypes.DEFAULT_TYP
                     if len(parts) == 2:
                         username = parts[0].strip()
                         password = encrypt_panel_credentials(parts[1].strip()) if parts[1].strip() else None
-                
+
                 payload["api_key"] = encrypted_credentials
                 payload["username"] = username
                 payload["password"] = password
-                
+
                 await set_step(user.id, step="admin.add_panel.node_id", payload=payload)
                 await update.message.reply_text(
                     "✅ اعتبارنامه ثبت شد (رمزنگاری شده).\n\n"
@@ -264,7 +263,7 @@ async def text_message_handler(update: Update, context: ContextTypes.DEFAULT_TYP
                     await update.message.reply_text("❌ Node ID باید یک عدد باشد.")
                     return
                 payload["node_id"] = node_id
-                
+
                 # For PasarGuard, ask for inbound_tag
                 if payload.get("type") == "pasarguard":
                     await set_step(user.id, step="admin.add_panel.inbound_tag", payload=payload)
@@ -356,9 +355,9 @@ async def text_message_handler(update: Update, context: ContextTypes.DEFAULT_TYP
             await update.message.reply_text("Please use /start first.")
             return
 
-        from utils.i18n import t
         from bot.keyboards import main_menu_keyboard, main_reply_keyboard
-        
+        from utils.i18n import t
+
         # Check if this is a reply keyboard button (any of the menu buttons)
         # Get all possible button texts
         purchase_text = t("purchase_service", db_user).replace('\u200c', '').replace('\u200d', '').strip()
@@ -368,10 +367,10 @@ async def text_message_handler(update: Update, context: ContextTypes.DEFAULT_TYP
         trial_text = t("free_trial", db_user).replace('\u200c', '').replace('\u200d', '').strip()
         support_text = t("support", db_user).replace('\u200c', '').replace('\u200d', '').strip()
         menu_text_btn = t("menu", db_user)
-        
+
         # Normalize received text
         text_normalized = text.replace('\u200c', '').replace('\u200d', '').strip()
-        
+
         # Check if it's a reply keyboard button (starts with emoji or matches button text)
         is_reply_keyboard_button = (
             text.startswith("🛒") or text.startswith("📦") or text.startswith("💰") or
@@ -381,7 +380,7 @@ async def text_message_handler(update: Update, context: ContextTypes.DEFAULT_TYP
             text_normalized == trial_text or text_normalized == support_text or
             text_normalized == menu_text_btn or text.lower() in {"منو", "menu"} or text in {"menu", "/menu"}
         )
-        
+
         if is_reply_keyboard_button:
             # When user presses "Menu" button, show inline keyboard with options
             from bot.keyboards import main_menu_keyboard
@@ -433,12 +432,12 @@ async def photo_message_handler(update: Update, context: ContextTypes.DEFAULT_TY
         from bot.admin_keyboards import admin_payment_detail_keyboard
         res = await db.execute(select(Admin).where(Admin.is_active.is_(True)))
         admins = list(res.scalars().all())
-        
+
         # Get payment details for better message
         pay = await db.get(Payment, payment_id)
         purchase = await db.get(Purchase, purchase_id)
         buyer = await db.get(User, purchase.user_id) if purchase else None
-        
+
         amount = int(pay.amount) if pay else 0
         txt = (
             "🧾 رسید پرداخت جدید\n\n"
@@ -448,7 +447,7 @@ async def photo_message_handler(update: Update, context: ContextTypes.DEFAULT_TY
             f"💳 Payment ID: {payment_id}\n\n"
             "برای تایید یا رد پرداخت، از دکمه‌های زیر استفاده کنید:"
         )
-        
+
         for admin in admins:
             try:
                 await context.bot.send_photo(
@@ -482,9 +481,9 @@ async def contact_message_handler(update: Update, context: ContextTypes.DEFAULT_
         if not db_user:
             await update.message.reply_text("Please use /start first.")
             return
-        from utils.security import sanitize_phone_number, validate_phone_number
-        from utils.i18n import get_user_language, t
         from bot.keyboards import main_menu_keyboard, main_reply_keyboard
+        from utils.i18n import get_user_language, t
+        from utils.security import sanitize_phone_number, validate_phone_number
 
         lang = get_user_language(db_user)
         sanitized = sanitize_phone_number(phone)

@@ -11,8 +11,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .base import Base, SoftDeleteMixin, TimestampMixin
 
 if TYPE_CHECKING:
-    from .purchase import Purchase
     from .panel import Panel
+    from .product_category import ProductCategory
+    from .purchase import Purchase
 
 
 class ProductStatus(str, Enum):
@@ -59,12 +60,12 @@ class Product(Base, TimestampMixin, SoftDeleteMixin):
 
     # Category
     category_id: Mapped[int | None] = mapped_column(ForeignKey("product_categories.id", ondelete="SET NULL"), nullable=True, index=True)
-    
+
     # Relationships
-    panel: Mapped["Panel"] = relationship("Panel", foreign_keys=[panel_id], back_populates="products")
-    test_panel: Mapped["Panel | None"] = relationship("Panel", foreign_keys=[test_panel_id])
-    category: Mapped["ProductCategory | None"] = relationship("ProductCategory", back_populates="products")
-    purchases: Mapped[list["Purchase"]] = relationship("Purchase", back_populates="product", lazy="selectin")
+    panel: Mapped[Panel] = relationship("Panel", foreign_keys=[panel_id], back_populates="products")
+    test_panel: Mapped[Panel | None] = relationship("Panel", foreign_keys=[test_panel_id])
+    category: Mapped[ProductCategory | None] = relationship("ProductCategory", back_populates="products")
+    purchases: Mapped[list[Purchase]] = relationship("Purchase", back_populates="product", lazy="selectin")
 
     def __repr__(self) -> str:
         return f"<Product(id={self.id}, name={self.name}, price={self.price})>"

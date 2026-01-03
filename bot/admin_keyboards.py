@@ -4,7 +4,13 @@ from __future__ import annotations
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
-from database.models import Panel, Payment, PaymentStatus, Purchase, PurchaseStatus, Service, ServiceStatus, User
+from database.models import (
+    Panel,
+    Payment,
+    Service,
+    ServiceStatus,
+    User,
+)
 from database.models.purchase import PurchaseType
 
 
@@ -25,27 +31,25 @@ def admin_main_keyboard() -> InlineKeyboardMarkup:
 def admin_payments_list_keyboard(payments: list[Payment], page: int = 0, per_page: int = 5) -> InlineKeyboardMarkup:
     """List pending payments with approve/reject buttons."""
     keyboard: list[list[InlineKeyboardButton]] = []
-    
+
     start = page * per_page
     end = start + per_page
     page_payments = payments[start:end]
-    
+
     for pay in page_payments:
         purchase = pay.purchase
-        user_id = purchase.user_id if purchase else None
         amount = int(pay.amount) if pay.amount else 0
-        
+
         # Get user info if available
-        user_info = f"User {user_id}" if user_id else "Unknown"
         if purchase and purchase.purchase_type == PurchaseType.WALLET_TOPUP:
             text = f"💰 TopUp #{pay.id} - {amount:,} تومان"
         else:
             text = f"💳 Payment #{pay.id} - {amount:,} تومان"
-        
+
         # Truncate if too long
         if len(text) > 40:
             text = text[:37] + "..."
-        
+
         keyboard.append([
             InlineKeyboardButton(text, callback_data=f"admin_payment_detail_{pay.id}")
         ])
@@ -53,7 +57,7 @@ def admin_payments_list_keyboard(payments: list[Payment], page: int = 0, per_pag
             InlineKeyboardButton("✅ تایید", callback_data=f"admin_payment_approve_{pay.id}"),
             InlineKeyboardButton("❌ رد", callback_data=f"admin_payment_reject_{pay.id}"),
         ])
-    
+
     # Pagination
     nav_buttons: list[InlineKeyboardButton] = []
     if page > 0:
@@ -62,7 +66,7 @@ def admin_payments_list_keyboard(payments: list[Payment], page: int = 0, per_pag
         nav_buttons.append(InlineKeyboardButton("بعدی ➡️", callback_data=f"admin_payments_pending_page_{page+1}"))
     if nav_buttons:
         keyboard.append(nav_buttons)
-    
+
     keyboard.append([InlineKeyboardButton("🔙 بازگشت به منوی ادمین", callback_data="admin_main")])
     return InlineKeyboardMarkup(keyboard)
 
@@ -81,11 +85,11 @@ def admin_payment_detail_keyboard(payment_id: int) -> InlineKeyboardMarkup:
 def admin_users_list_keyboard(users: list[User], page: int = 0, per_page: int = 10) -> InlineKeyboardMarkup:
     """List users with management options."""
     keyboard: list[list[InlineKeyboardButton]] = []
-    
+
     start = page * per_page
     end = start + per_page
     page_users = users[start:end]
-    
+
     for u in page_users:
         username = u.username or f"User {u.id}"
         balance = int(u.balance) if u.balance else 0
@@ -93,7 +97,7 @@ def admin_users_list_keyboard(users: list[User], page: int = 0, per_page: int = 
         keyboard.append([
             InlineKeyboardButton(text, callback_data=f"admin_user_detail_{u.id}")
         ])
-    
+
     # Pagination
     nav_buttons: list[InlineKeyboardButton] = []
     if page > 0:
@@ -102,7 +106,7 @@ def admin_users_list_keyboard(users: list[User], page: int = 0, per_page: int = 
         nav_buttons.append(InlineKeyboardButton("➡️ بعدی", callback_data=f"admin_users_page_{page+1}"))
     if nav_buttons:
         keyboard.append(nav_buttons)
-    
+
     keyboard.append([InlineKeyboardButton("🔙 بازگشت", callback_data="admin_main")])
     return InlineKeyboardMarkup(keyboard)
 
@@ -120,18 +124,18 @@ def admin_user_detail_keyboard(user_id: int) -> InlineKeyboardMarkup:
 def admin_services_list_keyboard(services: list[Service], page: int = 0, per_page: int = 10) -> InlineKeyboardMarkup:
     """List services with management options."""
     keyboard: list[list[InlineKeyboardButton]] = []
-    
+
     start = page * per_page
     end = start + per_page
     page_services = services[start:end]
-    
+
     for svc in page_services:
         status_icon = "✅" if svc.status == ServiceStatus.ACTIVE else "❌"
         text = f"{status_icon} Service #{svc.id} - {svc.protocol.upper()}"
         keyboard.append([
             InlineKeyboardButton(text, callback_data=f"admin_service_detail_{svc.id}")
         ])
-    
+
     # Pagination
     nav_buttons: list[InlineKeyboardButton] = []
     if page > 0:
@@ -140,7 +144,7 @@ def admin_services_list_keyboard(services: list[Service], page: int = 0, per_pag
         nav_buttons.append(InlineKeyboardButton("➡️ بعدی", callback_data=f"admin_services_page_{page+1}"))
     if nav_buttons:
         keyboard.append(nav_buttons)
-    
+
     keyboard.append([InlineKeyboardButton("🔙 بازگشت", callback_data="admin_main")])
     return InlineKeyboardMarkup(keyboard)
 
@@ -176,11 +180,11 @@ def admin_settings_keyboard() -> InlineKeyboardMarkup:
 def admin_panels_list_keyboard(panels: list[Panel], page: int = 0, per_page: int = 10) -> InlineKeyboardMarkup:
     """List panels with management options."""
     keyboard: list[list[InlineKeyboardButton]] = []
-    
+
     start = page * per_page
     end = start + per_page
     page_panels = panels[start:end]
-    
+
     for panel in page_panels:
         status_icon = "✅" if panel.status.value == "active" else "❌"
         text = f"{status_icon} {panel.name} ({panel.api_url[:30]}...)"
@@ -189,7 +193,7 @@ def admin_panels_list_keyboard(panels: list[Panel], page: int = 0, per_page: int
         keyboard.append([
             InlineKeyboardButton(text, callback_data=f"admin_panel_detail_{panel.id}")
         ])
-    
+
     # Pagination
     nav_buttons: list[InlineKeyboardButton] = []
     if page > 0:
@@ -198,7 +202,7 @@ def admin_panels_list_keyboard(panels: list[Panel], page: int = 0, per_page: int
         nav_buttons.append(InlineKeyboardButton("➡️ بعدی", callback_data=f"admin_panels_page_{page+1}"))
     if nav_buttons:
         keyboard.append(nav_buttons)
-    
+
     keyboard.append([InlineKeyboardButton("➕ افزودن پنل", callback_data="admin_panel_add")])
     keyboard.append([InlineKeyboardButton("🔙 بازگشت", callback_data="admin_main")])
     return InlineKeyboardMarkup(keyboard)

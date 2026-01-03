@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from loguru import logger
 from sqlalchemy import select
@@ -76,7 +76,7 @@ async def job_sync_usage(context: ContextTypes.DEFAULT_TYPE) -> None:
 
                         # Update expiry date
                         if user_stats.expire_ts:
-                            svc.expiry_date = datetime.fromtimestamp(user_stats.expire_ts, tz=timezone.utc).replace(tzinfo=None)
+                            svc.expiry_date = datetime.fromtimestamp(user_stats.expire_ts, tz=UTC).replace(tzinfo=None)
 
                         # Update status
                         status = user_stats.status.lower()

@@ -13,15 +13,12 @@ All handlers are protected by the @admin_required decorator.
 
 from __future__ import annotations
 
-import asyncio
-from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
 from loguru import logger
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import CommandHandler, ContextTypes
 
-from config.settings import settings
 from database.models import UserStatus
 from database.session import get_db
 from services.admin_panel import (
@@ -602,7 +599,7 @@ async def search_users_command(update: Update, context: ContextTypes.DEFAULT_TYP
 # =============================================================================
 
 
-def register_admin_handlers(application: "Application") -> None:
+def register_admin_handlers(application: Application) -> None:
     """Register all admin command handlers."""
     # User Management
     application.add_handler(CommandHandler("ban_user", ban_user_command))

@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy import func, select
 
-from database.models import DiscountCode, DiscountType, Purchase, User
+from database.models import DiscountCode, DiscountType, Purchase
 from database.models.purchase import PurchaseStatus
 
 if TYPE_CHECKING:
@@ -81,8 +81,8 @@ async def apply_gift_code_to_wallet(
     Apply gift code (special discount that adds to wallet instead of applying to purchase).
     Returns: (success, message, amount_added)
     """
-    from services.wallet import apply_wallet_tx
     from database.models.wallet import WalletTxType
+    from services.wallet import apply_wallet_tx
 
     code_upper = code.strip().upper()
 

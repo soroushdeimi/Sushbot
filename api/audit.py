@@ -23,7 +23,7 @@ async def audit(
 ) -> None:
     """
     Create an audit log entry for admin actions.
-    
+
     Args:
         db: Database session
         actor_user_id: ID of the user performing the action
@@ -33,7 +33,7 @@ async def audit(
         ip: IP address of the actor (optional, for API requests)
         user_agent: User agent string (optional, for API requests)
         meta: Additional metadata as dictionary (will be JSON-encoded)
-    
+
     Example:
         await audit(
             db,

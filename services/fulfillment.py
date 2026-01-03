@@ -4,14 +4,14 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 
+from loguru import logger
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from loguru import logger
 
 from database.models import Panel, Purchase, Service
 from database.models.purchase import PurchaseType
 from database.models.wallet import WalletTransaction, WalletTxType
-from integrations.exceptions import PanelError, PanelConnectionError, PanelUserNotFoundError
+from integrations.exceptions import PanelConnectionError, PanelError, PanelUserNotFoundError
 from integrations.factory import PanelFactory
 from services.provisioning import provision_purchase
 from services.wallet import apply_wallet_tx
@@ -20,7 +20,7 @@ from services.wallet import apply_wallet_tx
 async def fulfill_purchase(db: AsyncSession, *, purchase: Purchase) -> Service | None:
     """
     Fulfill a completed purchase based on purchase type.
-    
+
     This function handles different types of purchases:
     - NEW: Provisions a new VPN service
     - RENEWAL: Extends expiration date on existing service
@@ -81,7 +81,7 @@ async def fulfill_purchase(db: AsyncSession, *, purchase: Purchase) -> Service |
     panel_service = None
     try:
         panel_service = await PanelFactory.create_panel(panel)
-        
+
         if purchase.purchase_type == PurchaseType.RENEWAL:
             now = datetime.utcnow()
             base = svc.expiry_date if svc.expiry_date and svc.expiry_date > now else now

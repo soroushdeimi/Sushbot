@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
+from loguru import logger
 from sqlalchemy import select
 from telegram import Update
 from telegram.ext import ContextTypes
@@ -17,8 +18,6 @@ from database.models import Panel, PanelStatus
 from database.session import get_db
 from integrations.exceptions import PanelError
 from integrations.factory import PanelFactory
-from loguru import logger
-from utils.i18n import get_user_language, t
 
 
 async def admin_panels_list_callback(update: Update, context: ContextTypes.DEFAULT_TYPE, page: int = 0) -> None:
@@ -31,7 +30,6 @@ async def admin_panels_list_callback(update: Update, context: ContextTypes.DEFAU
         return
 
     async for db in get_db():
-        from database.models import Admin, User, UserRole
         from handlers.commands import _require_admin
 
         admin = await _require_admin(db, user.id)

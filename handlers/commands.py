@@ -5,23 +5,31 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 
+from loguru import logger
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
-from database.session import get_db
-from database.models import Admin, AdminLevel, Payment, PaymentStatus, Purchase, PurchaseStatus, Service, ServiceStatus, TrialAccount, User, UserRole
+from database.models import (
+    Admin,
+    AdminLevel,
+    Payment,
+    PaymentStatus,
+    Purchase,
+    PurchaseStatus,
+    Service,
+    ServiceStatus,
+    User,
+    UserRole,
+)
 from database.models.purchase import PurchaseType
-from database.models.service import ServiceType
+from database.session import get_db
 from integrations.factory import PanelFactory
-from services.state_machine import release_lock, try_lock
 from services.fulfillment import fulfill_purchase
+from services.state_machine import release_lock, try_lock
 from services.wallet import apply_wallet_tx
-from utils.security import generate_referral_code
-from utils.security import hash_password
-from utils.panel_username import make_panel_username
-from loguru import logger
+from utils.security import generate_referral_code, hash_password
 
 if TYPE_CHECKING:
     from telegram.ext import Application
@@ -86,7 +94,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         # Optional affiliate binding via /start payload
         try:
             payload = (context.args[0] if getattr(context, "args", None) else None)
-        except (IndexError, AttributeError, TypeError) as e:
+        except (IndexError, AttributeError, TypeError):
             # Expected errors when args is None or empty
             payload = None
         except Exception as e:
@@ -114,7 +122,10 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
                 await db.commit()
                 logger.info(f"Auto-promoted first user to SUPER_ADMIN: {db_user.id}")
 
-        from bot.keyboards import language_selection_keyboard, main_menu_keyboard, main_reply_keyboard
+        from bot.keyboards import (
+            language_selection_keyboard,
+            main_reply_keyboard,
+        )
         from utils.i18n import Language, get_user_language, t
 
         # Check if user needs to select language (new user or language not set)
@@ -122,7 +133,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         if not db_user.language_code or db_user.language_code not in {"fa", "en", "bilingual"}:
             # Show language selection for new users (always in English first)
             lang_desc = t("select_language_desc", None, Language.ENGLISH)
-            lang_text = t("select_language", None, Language.ENGLISH)
+            t("select_language", None, Language.ENGLISH)
             await update.message.reply_text(lang_desc, reply_markup=language_selection_keyboard())
             return
 
@@ -134,7 +145,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
 async def menu_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle /menu command with i18n."""
-    from bot.keyboards import main_menu_keyboard, main_reply_keyboard
+    from bot.keyboards import main_reply_keyboard
     from utils.i18n import t
 
     user = update.effective_user
@@ -347,7 +358,13 @@ async def treply_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         if not a:
             await update.message.reply_text("Admin only.")
             return
-        from database.models import SupportMessage, SupportMessageType, SupportSender, SupportTicket, TicketStatus
+        from database.models import (
+            SupportMessage,
+            SupportMessageType,
+            SupportSender,
+            SupportTicket,
+            TicketStatus,
+        )
         res = await db.execute(select(SupportTicket).where(SupportTicket.ticket_number == tn).limit(1))
         t = res.scalars().first()
         if not t:
@@ -671,7 +688,10 @@ async def admin_payapprove_command(update: Update, context: ContextTypes.DEFAULT
             assert svc is not None
             await update.message.reply_text(f"✅ Approved payment #{pay.id}. Fulfilled service #{svc.id}.")
             try:
-                from services.subscription import ensure_service_sub_token, subscription_url_from_token
+                from services.subscription import (
+                    ensure_service_sub_token,
+                    subscription_url_from_token,
+                )
                 tok = await ensure_service_sub_token(db, svc)
                 sub_url = subscription_url_from_token(tok)
                 sub_txt = f"\n\n🔗 Sub:\n{sub_url}" if sub_url else ""
@@ -856,7 +876,12 @@ async def admin_stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE
             return
 
         from config.features import is_enabled
-        from services.reports import get_overall_stats, get_purchase_report, get_revenue_breakdown, get_trial_report
+        from services.reports import (
+            get_overall_stats,
+            get_purchase_report,
+            get_revenue_breakdown,
+            get_trial_report,
+        )
 
         if not is_enabled("reporting"):
             await update.message.reply_text("Reporting feature disabled.")
@@ -898,7 +923,7 @@ async def admin_stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE
             await update.message.reply_text(txt)
         elif report_type == "revenue":
             report = await get_revenue_breakdown(db, days=30)
-            txt = f"📊 Revenue Breakdown (last 30 days)\n\n"
+            txt = "📊 Revenue Breakdown (last 30 days)\n\n"
             for day in report["daily_breakdown"][:7]:
                 txt += f"{day['date']}: {day['count']} sales, {day['revenue']:,} Toman\n"
             await update.message.reply_text(txt)
@@ -960,7 +985,7 @@ async def admin_remove_service_command(update: Update, context: ContextTypes.DEF
             return
 
         try:
-            result = await remove_service(db, service_id=service_id, admin_id=user.id, reason=reason)
+            await remove_service(db, service_id=service_id, admin_id=user.id, reason=reason)
             await update.message.reply_text(f"✅ Removed service #{service_id}")
         except ValueError as e:
             await update.message.reply_text(f"❌ Error: {e}")
@@ -976,17 +1001,18 @@ async def admin_panel_command(update: Update, context: ContextTypes.DEFAULT_TYPE
         if not db_user or db_user.role != UserRole.ADMIN:
             await update.message.reply_text("Admin only.")
             return
-        
-        from bot.admin_keyboards import admin_main_keyboard
+
         from sqlalchemy import func
+
+        from bot.admin_keyboards import admin_main_keyboard
         from database.models import Payment, PaymentStatus
-        
+
         # Count pending payments
         res = await db.execute(
             select(func.count(Payment.id)).where(Payment.status == PaymentStatus.PENDING)
         )
         pending_count = res.scalar() or 0
-        
+
         text = (
             "🔐 پنل مدیریت\n\n"
             f"💰 پرداخت‌های در انتظار: {pending_count}\n\n"
@@ -1020,7 +1046,7 @@ async def admin_transfer_service_command(update: Update, context: ContextTypes.D
             return
 
         try:
-            result = await transfer_service(db, service_id=service_id, new_user_id=new_user_id, admin_id=user.id, reason=reason)
+            await transfer_service(db, service_id=service_id, new_user_id=new_user_id, admin_id=user.id, reason=reason)
             await update.message.reply_text(f"✅ Transferred service #{service_id} to user {new_user_id}")
         except ValueError as e:
             await update.message.reply_text(f"❌ Error: {e}")

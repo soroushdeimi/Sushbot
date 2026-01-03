@@ -6,7 +6,7 @@ import json
 from datetime import datetime
 
 from loguru import logger
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 
 from config.settings import settings
 from database.models import Panel, PanelStatus, Product, ProductStatus

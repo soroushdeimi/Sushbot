@@ -3,20 +3,23 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
-
-from sqlalchemy import select
-from telegram import Update
-from telegram.ext import ContextTypes
+from typing import TYPE_CHECKING
 
 from loguru import logger
-from telegram.error import TelegramError, NetworkError
+from sqlalchemy import select
+from telegram import Update
+from telegram.error import NetworkError, TelegramError
+from telegram.ext import ContextTypes
 
-from database.session import get_db
+if TYPE_CHECKING:
+    from telegram.ext import Application
+
+from config.features import is_enabled
 from database.models import Payment, PaymentGateway, PaymentStatus, Purchase, PurchaseStatus, User
-from integrations.exceptions import PanelError, PanelConnectionError
+from database.session import get_db
+from integrations.exceptions import PanelConnectionError, PanelError
 from integrations.payments import AqayepardakhtGateway, CardToCardGateway, NowPaymentsGateway
 from services.state_machine import release_lock, set_step, try_lock
-from config.features import is_enabled
 
 
 async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -74,7 +77,7 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     if data.startswith("admin_"):
         await admin_router(update, context, data)
         return
-    
+
     # Route to appropriate handler
     if data.startswith("lang_"):
         await language_selection_callback(update, context, data)
@@ -176,8 +179,8 @@ async def wallet_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYP
     if not user:
         return
     async for db in get_db():
-        from database.models import User
         from bot.keyboards import wallet_menu_keyboard
+        from database.models import User
         from utils.i18n import get_user_language, t
 
         db_user = await db.get(User, user.id)
@@ -197,8 +200,8 @@ async def wallet_balance_callback(update: Update, context: ContextTypes.DEFAULT_
     if not user:
         return
     async for db in get_db():
-        from database.models import User
         from bot.keyboards import wallet_menu_keyboard
+        from database.models import User
         from utils.i18n import get_user_language, t
 
         db_user = await db.get(User, user.id)
@@ -234,13 +237,13 @@ async def language_selection_callback(update: Update, context: ContextTypes.DEFA
         db_user.language_code = selected_lang
         await db.commit()
 
-        from bot.keyboards import main_menu_keyboard, main_reply_keyboard
+        from bot.keyboards import main_reply_keyboard
         from utils.i18n import Language, t
 
         user_lang = Language(selected_lang)
         welcome_text = t("welcome", db_user, user_lang)
         lang_set_msg = t("language_set", db_user, user_lang)
-        menu_text = t("menu", db_user, user_lang) + ":\n\n" + t("choose_option", db_user, user_lang)
+        t("menu", db_user, user_lang) + ":\n\n" + t("choose_option", db_user, user_lang)
 
         await query.edit_message_text(lang_set_msg)
         # Only show Reply Keyboard (not Inline) to avoid duplication
@@ -280,7 +283,7 @@ async def purchase_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 
     # Get available products
     async for db in get_db():
-        from database.models import Product, ProductStatus, Panel
+        from database.models import Panel, Product, ProductStatus
         from services.access_control import ensure_access
         from utils.i18n import t
 
@@ -436,9 +439,10 @@ async def service_send_config(update: Update, context: ContextTypes.DEFAULT_TYPE
         if not svc.config_link:
             await query.edit_message_text(t("config_not_available", db_user, lang))
             return
+        from loguru import logger
+
         from services.subscription import ensure_service_sub_token, subscription_url_from_token
         from utils.qr import send_qr_code
-        from loguru import logger
         tok = await ensure_service_sub_token(db, svc)
         sub_url = subscription_url_from_token(tok)
         sub_txt = f"\n\n🔗 {t('subscription_link', db_user, lang)}:\n{sub_url}" if sub_url else ""
@@ -518,6 +522,7 @@ async def service_execute_action(update: Update, context: ContextTypes.DEFAULT_T
                 return
             if action == "revoke":
                 import secrets
+
                 from database.models import User
                 from services.subscription import subscription_url_from_token
                 from utils.i18n import get_user_language, t
@@ -566,16 +571,16 @@ async def service_execute_action(update: Update, context: ContextTypes.DEFAULT_T
                         user_stats = await panel_service.get_user_stats(username=svc.client_email)
                         used_bytes = user_stats.used_traffic_bytes
                         data_limit_bytes = user_stats.data_limit_bytes
-                        
+
                         # Rotate credentials (this creates new UUID)
                         await panel_service.rotate_credentials(username=svc.client_email, protocol=svc.protocol)
-                        
+
                         # Generate new config link
                         new_link = await panel_service.generate_config_link(
                             username=svc.client_email,
                             protocol=svc.protocol,
                         )
-                        
+
                         # Update data_limit: subtract used traffic from limit
                         if data_limit_bytes is not None and used_bytes > 0:
                             new_limit = max(0, int(data_limit_bytes) - used_bytes)
@@ -600,7 +605,7 @@ async def service_execute_action(update: Update, context: ContextTypes.DEFAULT_T
                             # Unlimited or no limit - just reset used_traffic
                             await panel_service.reset_traffic(username=svc.client_email)
                             svc.used_traffic_gb = 0.0
-                        
+
                         svc.config_link = new_link
                         await db.commit()
                         await query.edit_message_text(f"✅ روتیت انجام شد.\n\n🔗 {new_link}")
@@ -657,10 +662,10 @@ async def service_apply_product_callback(
     if not user:
         return
     async for db in get_db():
+        from bot.keyboards import payment_gateway_keyboard
         from config.settings import settings
         from database.models import Product, Service
         from database.models.purchase import PurchaseType
-        from bot.keyboards import payment_gateway_keyboard
 
         svc = await db.get(Service, service_id)
         if not svc or svc.user_id != user.id:
@@ -770,7 +775,7 @@ async def product_callback(
             return
 
         traffic_text = f"{product.traffic_gb} GB" if product.traffic_gb > 0 else "Unlimited"
-        product_text = (
+        (
             f"📦 {product.name}\n\n"
             f"💵 Price: {product.price:,} Toman\n"
             f"⏱ Duration: {product.duration_days} days\n"
@@ -860,9 +865,9 @@ async def confirm_purchase_callback(
                 await db.commit()
                 return
 
-            from database.models import Product
-            from config.settings import settings
             from bot.keyboards import payment_gateway_keyboard
+            from config.settings import settings
+            from database.models import Product
 
             product = await db.get(Product, product_id)
             if not product:
@@ -872,6 +877,7 @@ async def confirm_purchase_callback(
             # Phase 4 (subscription_version): order -> payment -> approve -> provision
             if settings.subscription_version:
                 from sqlalchemy import func, select
+
                 from database.models.purchase import Purchase as PurchaseModel
                 from database.models.purchase import PurchaseStatus as PurchaseStatusEnum
                 from services.discount import validate_and_apply_discount
@@ -953,9 +959,9 @@ async def confirm_purchase_callback(
                 return
 
             # Legacy mode: provision immediately
-            from integrations.pasarguard import create_service_config
             from database.models import Service, ServiceStatus
             from database.models.service import ServiceType
+            from integrations.pasarguard import create_service_config
             from utils.panel_username import make_panel_username
 
             # Use same username format as new mode for consistency
@@ -1032,8 +1038,8 @@ async def faq_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         if not db_user:
             await query.edit_message_text("Please use /start first.")
             return
-        from utils.i18n import Language, get_user_language, t
         from services.runtime_settings import get_setting
+        from utils.i18n import Language, get_user_language
 
         lang = get_user_language(db_user)
         fa = await get_setting(db, "faq_fa") or "❓ سوالات متداول\n\n(توسط ادمین قابل تنظیم است)"
@@ -1059,8 +1065,8 @@ async def tutorial_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         if not db_user:
             await query.edit_message_text("Please use /start first.")
             return
-        from utils.i18n import Language, get_user_language, t
         from services.runtime_settings import get_setting
+        from utils.i18n import Language, get_user_language
 
         lang = get_user_language(db_user)
         fa = await get_setting(db, "tutorial_fa") or "📚 آموزش\n\n(توسط ادمین قابل تنظیم است)"
@@ -1092,9 +1098,10 @@ async def affiliate_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
             db_user.referral_code = generate_referral_code(db_user.id)
             await db.commit()
         from sqlalchemy import func, select
+
+        from config.settings import settings
         from database.models import WalletTransaction, WalletTxType
         from services.affiliate import build_referral_link
-        from config.settings import settings
 
         res = await db.execute(select(func.count(User.id)).where(User.referred_by_id == db_user.id))
         cnt = int(res.scalar() or 0)
@@ -1376,7 +1383,7 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE, data:
         admin_stats_callback,
         admin_users_callback,
     )
-    
+
     # Main menu
     if data == "admin_main":
         await admin_main_callback(update, context)
@@ -1434,7 +1441,9 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE, data:
         await admin_users_callback(update, context)
     elif data.startswith("admin_user_detail_"):
         user_id = int(data.split("_")[-1])
-        from handlers.admin_callbacks_complete import admin_user_detail_callback as admin_user_detail
+        from handlers.admin_callbacks_complete import (
+            admin_user_detail_callback as admin_user_detail,
+        )
         await admin_user_detail(update, context, user_id)
     # Services
     elif data == "admin_services":
@@ -1444,27 +1453,39 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE, data:
         await admin_services_callback(update, context)
     elif data.startswith("admin_service_detail_"):
         service_id = int(data.split("_")[-1])
-        from handlers.admin_callbacks_complete import admin_service_detail_callback as admin_service_detail
+        from handlers.admin_callbacks_complete import (
+            admin_service_detail_callback as admin_service_detail,
+        )
         await admin_service_detail(update, context, service_id)
     elif data.startswith("admin_service_sync_"):
         service_id = int(data.split("_")[-1])
-        from handlers.admin_callbacks_complete import admin_service_sync_callback as admin_service_sync
+        from handlers.admin_callbacks_complete import (
+            admin_service_sync_callback as admin_service_sync,
+        )
         await admin_service_sync(update, context, service_id)
     elif data.startswith("admin_service_renew_"):
         service_id = int(data.split("_")[-1])
-        from handlers.admin_callbacks_complete import admin_service_renew_callback as admin_service_renew
+        from handlers.admin_callbacks_complete import (
+            admin_service_renew_callback as admin_service_renew,
+        )
         await admin_service_renew(update, context, service_id)
     elif data.startswith("admin_service_addgb_"):
         service_id = int(data.split("_")[-1])
-        from handlers.admin_callbacks_complete import admin_service_addgb_callback as admin_service_addgb
+        from handlers.admin_callbacks_complete import (
+            admin_service_addgb_callback as admin_service_addgb,
+        )
         await admin_service_addgb(update, context, service_id)
     elif data.startswith("admin_service_rotate_"):
         service_id = int(data.split("_")[-1])
-        from handlers.admin_callbacks_complete import admin_service_rotate_callback as admin_service_rotate
+        from handlers.admin_callbacks_complete import (
+            admin_service_rotate_callback as admin_service_rotate,
+        )
         await admin_service_rotate(update, context, service_id)
     elif data.startswith("admin_service_remove_"):
         service_id = int(data.split("_")[-1])
-        from handlers.admin_callbacks_complete import admin_service_remove_callback as admin_service_remove
+        from handlers.admin_callbacks_complete import (
+            admin_service_remove_callback as admin_service_remove,
+        )
         await admin_service_remove(update, context, service_id)
     # Products
     elif data == "admin_products":
@@ -1521,7 +1542,9 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE, data:
         from handlers.admin_callbacks_complete import admin_set_faq_callback as admin_set_faq
         await admin_set_faq(update, context)
     elif data == "admin_set_tutorial":
-        from handlers.admin_callbacks_complete import admin_set_tutorial_callback as admin_set_tutorial
+        from handlers.admin_callbacks_complete import (
+            admin_set_tutorial_callback as admin_set_tutorial,
+        )
         await admin_set_tutorial(update, context)
     else:
         await update.callback_query.answer("Unknown admin action.", show_alert=True)

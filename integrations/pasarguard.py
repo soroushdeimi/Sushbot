@@ -2,18 +2,14 @@
 
 from __future__ import annotations
 
-# Use database-based integration instead of API
-from integrations.pasarguard_db import PasarGuardDBClient as PasarGuardClient
+import uuid
 
 # Keep old imports for backward compatibility
 from datetime import datetime, timedelta
-import uuid
 from typing import Any
 
-from loguru import logger
-
-from config.settings import settings
-
+# Use database-based integration instead of API
+from integrations.pasarguard_db import PasarGuardDBClient as PasarGuardClient
 
 """
 NOTE:

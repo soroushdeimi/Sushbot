@@ -12,10 +12,10 @@ from api.audit import audit
 from config.features import is_enabled
 from database.models import Panel, Service, ServiceStatus, User
 from integrations.base import UserStats
-from integrations.exceptions import PanelError, PanelConnectionError, PanelUserNotFoundError
+from integrations.exceptions import PanelConnectionError, PanelError, PanelUserNotFoundError
 from integrations.factory import PanelFactory, PanelType
-from integrations.pasarguard.service import PasarGuardService
 from integrations.marzban.service import MarzbanService
+from integrations.pasarguard.service import PasarGuardService
 
 
 async def transfer_service(
@@ -84,7 +84,7 @@ async def _migrate_pasarguard_location(
 ) -> None:
     """
     Migrate PasarGuard user to new inbound.
-    
+
     Strategy:
     1. Create user in new inbound with same credentials (expire_ts, data_limit_bytes, protocol)
     2. User will be automatically added to the new inbound's group
@@ -93,14 +93,14 @@ async def _migrate_pasarguard_location(
     # Create a new PasarGuardService instance with the new inbound_tag
     # We need to create user in the new inbound
     from integrations.pasarguard.service import PasarGuardService
-    
+
     # Create temporary service instance for new inbound
     new_panel_service = PasarGuardService(
         panel_name=panel_service.panel_name,
         node_id=panel_service.node_id,
         inbound_tag=new_inbound_tag,
     )
-    
+
     try:
         # Create user in new inbound (preserves credentials and settings)
         await new_panel_service.create_user(
@@ -122,7 +122,7 @@ async def _migrate_marzban_location(
 ) -> None:
     """
     Migrate Marzban user to new inbound.
-    
+
     Strategy:
     1. Delete user from old location
     2. Create user in new location with preserved stats
@@ -134,7 +134,7 @@ async def _migrate_marzban_location(
     except PanelUserNotFoundError:
         # User might not exist in old location, continue anyway
         logger.warning(f"User {service.client_email} not found in old location, continuing migration")
-    
+
     # Create user in new location
     await panel_service.create_user(
         username=service.client_email,
@@ -171,12 +171,10 @@ async def change_service_location(
     panel_service = None
     try:
         panel_service = await PanelFactory.create_panel(panel)
-        
+
         # Get current user data from panel
         try:
             user_stats = await panel_service.get_user_stats(username=service.client_email)
-            expire_ts = user_stats.expire_ts
-            data_limit_bytes = user_stats.data_limit_bytes
         except PanelConnectionError as e:
             logger.error(f"Cannot connect to panel {panel.name} to get user stats for service_id={service_id}: {e}")
             raise ValueError(f"Cannot connect to panel {panel.name}. Please check panel configuration.") from e

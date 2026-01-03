@@ -5,7 +5,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, ForeignKey, Integer, String, Text
+from sqlalchemy import BigInteger, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base, TimestampMixin
@@ -44,7 +44,7 @@ class SupportMessage(Base, TimestampMixin):
     # Optional metadata for future (mime, size, etc.)
     meta: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    ticket: Mapped["SupportTicket"] = relationship("SupportTicket", back_populates="messages", lazy="selectin")
+    ticket: Mapped[SupportTicket] = relationship("SupportTicket", back_populates="messages", lazy="selectin")
 
 
 

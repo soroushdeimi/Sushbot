@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.audit import audit
-from api.deps import AdminLevel, CurrentAdmin, get_current_admin, require_level
+from api.deps import AdminLevel, CurrentAdmin, require_level
 from config.features import is_enabled
 from database.session import get_db
 from services.refund import refund_purchase, remove_service

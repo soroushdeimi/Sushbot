@@ -12,9 +12,10 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .base import Base, SoftDeleteMixin, TimestampMixin
 
 if TYPE_CHECKING:
-    from .purchase import Purchase
     from .config import ServiceConfiguration
     from .panel import Panel
+    from .purchase import Purchase
+    from .user import User
 
 
 class ServiceType(str, Enum):
@@ -78,10 +79,10 @@ class Service(Base, TimestampMixin, SoftDeleteMixin):
     last_traffic_notified_at: Mapped[datetime | None] = mapped_column(nullable=True, index=True)
 
     # Relationships
-    user: Mapped["User"] = relationship("User", back_populates="services")
-    panel: Mapped["Panel"] = relationship("Panel", back_populates="services")
-    purchases: Mapped[list["Purchase"]] = relationship("Purchase", back_populates="service", lazy="selectin")
-    configurations: Mapped[list["ServiceConfiguration"]] = relationship(
+    user: Mapped[User] = relationship("User", back_populates="services")
+    panel: Mapped[Panel] = relationship("Panel", back_populates="services")
+    purchases: Mapped[list[Purchase]] = relationship("Purchase", back_populates="service", lazy="selectin")
+    configurations: Mapped[list[ServiceConfiguration]] = relationship(
         "ServiceConfiguration",
         back_populates="service",
         lazy="selectin",

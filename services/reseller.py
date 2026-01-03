@@ -33,7 +33,7 @@ async def get_reseller_discount(db: AsyncSession, *, user_id: int, product_id: i
         )
     )
     pricing = res.scalar_one_or_none()
-    
+
     # Return configured discount or default 10%
     return pricing if pricing is not None else 10
 
@@ -65,7 +65,7 @@ async def check_reseller_quota(db: AsyncSession, *, user_id: int, product_id: in
         )
     )
     quota = res.scalar_one_or_none()
-    
+
     # If no product-specific quota, check global quota
     if not quota:
         res = await db.execute(
@@ -76,22 +76,22 @@ async def check_reseller_quota(db: AsyncSession, *, user_id: int, product_id: in
             )
         )
         quota = res.scalar_one_or_none()
-    
+
     # No quota = unlimited
     if not quota or quota.monthly_limit is None:
         return True, None
-    
+
     # Reset if new month
     now = datetime.utcnow()
     if quota.reset_date < now.replace(day=1, hour=0, minute=0, second=0, microsecond=0):
         quota.current_month_usage = 0
         quota.reset_date = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         await db.commit()
-    
+
     # Check quota
     if quota.current_month_usage + quantity > quota.monthly_limit:
         return False, f"Monthly quota exceeded. Limit: {quota.monthly_limit}, Used: {quota.current_month_usage}, Requested: {quantity}"
-    
+
     return True, None
 
 
@@ -122,13 +122,13 @@ async def create_bulk_purchase(
     # Calculate price (with reseller discount if applicable)
     base_price = int(product.price)
     reseller_price = await calculate_reseller_price(db, user_id=user_id, product_id=product_id, base_price=base_price)
-    
+
     # Apply discount code if provided
     discount_code_obj = None
     discount_amount_total = 0
     if discount_code:
         from services.discount import validate_and_apply_discount
-        
+
         # Check if this is first purchase
         res = await db.execute(
             select(func.count(Purchase.id)).where(
@@ -137,7 +137,7 @@ async def create_bulk_purchase(
             )
         )
         is_first_purchase = int(res.scalar() or 0) == 0
-        
+
         # Validate discount code for total purchase amount
         total_purchase_amount = reseller_price * quantity
         discount_code_obj, discount_amount_total, error_msg = await validate_and_apply_discount(
@@ -149,7 +149,7 @@ async def create_bulk_purchase(
         )
         if not discount_code_obj:
             raise ValueError(f"Invalid discount code: {error_msg}")
-    
+
     # Calculate per-item pricing
     # Discount is applied to total, so we distribute it across items
     total_final_amount = (reseller_price * quantity) - discount_amount_total
@@ -179,7 +179,7 @@ async def create_bulk_purchase(
     await db.commit()
     for p in purchases:
         await db.refresh(p)
-    
+
     # Update quota usage after successful purchase creation
     if user.role == UserRole.RESELLER:
         # Find quota (product-specific or global)
@@ -191,7 +191,7 @@ async def create_bulk_purchase(
             )
         )
         quota = res.scalar_one_or_none()
-        
+
         if not quota:
             res = await db.execute(
                 select(ResellerQuota)
@@ -201,7 +201,7 @@ async def create_bulk_purchase(
                 )
             )
             quota = res.scalar_one_or_none()
-        
+
         if quota:
             quota.current_month_usage += quantity
             await db.commit()

@@ -183,7 +183,7 @@ async def _create_marzban_panel(panel: Panel) -> VPNPanelInterface:
     api_key: str | None = None
     username: str | None = getattr(panel, "username", None)
     password: str | None = getattr(panel, "password", None)
-    
+
     # Try to decrypt api_key (might be encrypted)
     if api_key_raw:
         try:
@@ -193,7 +193,7 @@ async def _create_marzban_panel(panel: Panel) -> VPNPanelInterface:
             # This is intentional to support both encrypted and plaintext credentials
             logger.debug(f"Decryption failed for api_key (assuming plaintext): {type(e).__name__}")
             api_key = api_key_raw
-    
+
     # Decrypt password if set
     if password:
         try:
@@ -203,7 +203,7 @@ async def _create_marzban_panel(panel: Panel) -> VPNPanelInterface:
             # This is intentional to support both encrypted and plaintext credentials
             logger.debug(f"Decryption failed for password (assuming plaintext): {type(e).__name__}")
             # Keep original password value
-    
+
     # For Marzban, api_key might contain username:password or be a token
     # Check if it looks like username:password format
     if api_key and ":" in api_key and not api_key.startswith("Bearer "):

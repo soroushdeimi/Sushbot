@@ -12,19 +12,24 @@ from bot.admin_keyboards import (
     admin_main_keyboard,
     admin_payment_detail_keyboard,
     admin_payments_list_keyboard,
-    admin_service_detail_keyboard,
     admin_services_list_keyboard,
     admin_settings_keyboard,
-    admin_user_detail_keyboard,
     admin_users_list_keyboard,
 )
-from database.models import Payment, PaymentGateway, PaymentStatus, Purchase, PurchaseStatus, Service, ServiceStatus, User, UserRole
+from database.models import (
+    Payment,
+    PaymentGateway,
+    PaymentStatus,
+    Purchase,
+    PurchaseStatus,
+    Service,
+    ServiceStatus,
+    User,
+    UserRole,
+)
 from database.models.purchase import PurchaseType
 from database.session import get_db
-from handlers.commands import admin_payapprove_command, admin_payreject_command
-from integrations.pasarguard_db import PasarGuardDBClient
 from services.fulfillment import fulfill_purchase
-from utils.i18n import get_user_language, t
 
 
 async def admin_main_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -35,19 +40,19 @@ async def admin_main_callback(update: Update, context: ContextTypes.DEFAULT_TYPE
     user = update.effective_user
     if not user:
         return
-    
+
     async for db in get_db():
         db_user = await db.get(User, user.id)
         if not db_user or db_user.role != UserRole.ADMIN:
             await query.answer("Admin only.", show_alert=True)
             return
-        
+
         # Count pending payments
         res = await db.execute(
             select(func.count(Payment.id)).where(Payment.status == PaymentStatus.PENDING)
         )
         pending_count = res.scalar() or 0
-        
+
         text = (
             "🔐 پنل مدیریت\n\n"
             f"💰 پرداخت‌های در انتظار: {pending_count}\n\n"
@@ -64,13 +69,13 @@ async def admin_payments_pending_callback(update: Update, context: ContextTypes.
     user = update.effective_user
     if not user:
         return
-    
+
     async for db in get_db():
         db_user = await db.get(User, user.id)
         if not db_user or db_user.role != UserRole.ADMIN:
             await query.answer("Admin only.", show_alert=True)
             return
-        
+
         res = await db.execute(
             select(Payment)
             .where(Payment.status == PaymentStatus.PENDING)
@@ -78,25 +83,25 @@ async def admin_payments_pending_callback(update: Update, context: ContextTypes.
             .limit(50)
         )
         payments = list(res.scalars().all())
-        
+
         if not payments:
             await query.edit_message_text(
                 "✅ هیچ پرداخت در انتظاری وجود ندارد.",
                 reply_markup=admin_main_keyboard(),
             )
             return
-        
+
         # Extract page from callback data if present
         if query.data and query.data.startswith("admin_payments_pending_page_"):
             try:
                 page = int(query.data.split("_")[-1])
             except (ValueError, IndexError):
                 page = 0
-        
+
         start = page * 5
         end = start + 5
-        page_payments = payments[start:end]
-        
+        payments[start:end]
+
         text = (
             f"💰 پرداخت‌های در انتظار\n\n"
             f"📊 کل: {len(payments)} مورد\n"
@@ -114,39 +119,39 @@ async def admin_payment_detail_callback(update: Update, context: ContextTypes.DE
     user = update.effective_user
     if not user:
         return
-    
+
     async for db in get_db():
         db_user = await db.get(User, user.id)
         if not db_user or db_user.role != UserRole.ADMIN:
             await query.answer("Admin only.", show_alert=True)
             return
-        
+
         pay = await db.get(Payment, payment_id)
         if not pay:
             await query.edit_message_text("پرداخت پیدا نشد.")
             return
-        
+
         purchase = await db.get(Purchase, pay.purchase_id)
         if not purchase:
             await query.edit_message_text("سفارش پیدا نشد.")
             return
-        
+
         buyer = await db.get(User, purchase.user_id)
         buyer_name = buyer.username if buyer else f"User {purchase.user_id}"
-        
+
         gateway_name = {
             PaymentGateway.CARD_TO_CARD: "کارت‌به‌کارت",
             PaymentGateway.NOWPAYMENTS: "NowPayments",
             PaymentGateway.AQAYEPARDAKHT: "Aqayepardakht",
         }.get(pay.gateway, pay.gateway.value)
-        
+
         purchase_type_name = {
             PurchaseType.NEW: "خرید جدید",
             PurchaseType.RENEW: "تمدید",
             PurchaseType.ADD_TRAFFIC: "افزودن ترافیک",
             PurchaseType.WALLET_TOPUP: "شارژ کیف پول",
         }.get(purchase.purchase_type, purchase.purchase_type.value)
-        
+
         text = (
             f"💳 جزئیات پرداخت #{pay.id}\n\n"
             f"👤 خریدار: {buyer_name} (ID: {purchase.user_id})\n"
@@ -156,16 +161,16 @@ async def admin_payment_detail_callback(update: Update, context: ContextTypes.DE
             f"📅 تاریخ: {pay.created_at.strftime('%Y-%m-%d %H:%M:%S')}\n"
             f"📝 کد پیگیری: {pay.tracking_code or '—'}\n"
         )
-        
+
         if purchase.product_id:
             from database.models import Product
             product = await db.get(Product, purchase.product_id)
             if product:
                 text += f"\n📦 محصول: {product.name}\n"
-        
+
         if purchase.service_id:
             text += f"\n🔗 سرویس: #{purchase.service_id}\n"
-        
+
         await query.edit_message_text(text, reply_markup=admin_payment_detail_keyboard(payment_id))
 
 
@@ -174,28 +179,27 @@ async def admin_payment_approve_callback(update: Update, context: ContextTypes.D
     query = update.callback_query
     if not query:
         return
-    
+
     user = update.effective_user
     if not user:
         return
-    
+
     async for db in get_db():
         db_user = await db.get(User, user.id)
         if not db_user or db_user.role != UserRole.ADMIN:
             await query.answer("Admin only.", show_alert=True)
             return
-        
-        from datetime import datetime
+
+        from loguru import logger
+
         from database.models import Payment, PaymentStatus, Purchase, PurchaseStatus
         from database.models.purchase import PurchaseType
-        from services.fulfillment import fulfill_purchase
-        from loguru import logger
-        
+
         pay = await db.get(Payment, payment_id)
         if not pay:
             await query.answer("پرداخت پیدا نشد.", show_alert=True)
             return
-        
+
         purchase = await db.get(Purchase, pay.purchase_id)
         if not purchase:
             await query.answer("سفارش پیدا نشد.", show_alert=True)
@@ -225,7 +229,10 @@ async def admin_payment_approve_callback(update: Update, context: ContextTypes.D
             assert svc is not None
             await query.answer("✅ پرداخت تایید شد. سرویس فعال شد.", show_alert=True)
             try:
-                from services.subscription import ensure_service_sub_token, subscription_url_from_token
+                from services.subscription import (
+                    ensure_service_sub_token,
+                    subscription_url_from_token,
+                )
                 tok = await ensure_service_sub_token(db, svc)
                 sub_url = subscription_url_from_token(tok)
                 sub_txt = f"\n\n🔗 Sub:\n{sub_url}" if sub_url else ""
@@ -245,7 +252,7 @@ async def admin_payment_approve_callback(update: Update, context: ContextTypes.D
                 )
         except Exception as e:
             logger.warning(f"Affiliate commission failed purchase_id={purchase.id}: {e}")
-    
+
     # Refresh payments list
     await admin_payments_pending_callback(update, context)
 
@@ -255,26 +262,26 @@ async def admin_payment_reject_callback(update: Update, context: ContextTypes.DE
     query = update.callback_query
     if not query:
         return
-    
+
     user = update.effective_user
     if not user:
         return
-    
+
     async for db in get_db():
         db_user = await db.get(User, user.id)
         if not db_user or db_user.role != UserRole.ADMIN:
             await query.answer("Admin only.", show_alert=True)
             return
-        
-        from datetime import datetime
-        from database.models import Payment, PaymentStatus, Purchase, PurchaseStatus
+
         from loguru import logger
-        
+
+        from database.models import Payment, PaymentStatus, Purchase, PurchaseStatus
+
         pay = await db.get(Payment, payment_id)
         if not pay:
             await query.answer("پرداخت پیدا نشد.", show_alert=True)
             return
-        
+
         purchase = await db.get(Purchase, pay.purchase_id)
         if purchase and purchase.status == PurchaseStatus.PENDING:
             purchase.status = PurchaseStatus.FAILED
@@ -287,14 +294,14 @@ async def admin_payment_reject_callback(update: Update, context: ContextTypes.DE
         pay.admin_notes = "Rejected by admin"
         pay.verified_at = datetime.utcnow()
         await db.commit()
-        
+
         await query.answer("❌ پرداخت رد شد.", show_alert=True)
         if purchase:
             try:
                 await context.bot.send_message(chat_id=purchase.user_id, text="❌ پرداخت شما رد شد. لطفاً با پشتیبانی تماس بگیرید.")
             except Exception as e:
                 logger.warning(f"Failed to notify user {purchase.user_id}: {e}")
-    
+
     # Refresh payments list
     await admin_payments_pending_callback(update, context)
 
@@ -307,13 +314,13 @@ async def admin_stats_callback(update: Update, context: ContextTypes.DEFAULT_TYP
     user = update.effective_user
     if not user:
         return
-    
+
     async for db in get_db():
         db_user = await db.get(User, user.id)
         if not db_user or db_user.role != UserRole.ADMIN:
             await query.answer("Admin only.", show_alert=True)
             return
-        
+
         # Overall stats
         total_users = (await db.execute(select(func.count(User.id)))).scalar() or 0
         active_services = (
@@ -329,7 +336,7 @@ async def admin_stats_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         pending_payments = (
             await db.execute(select(func.count(Payment.id)).where(Payment.status == PaymentStatus.PENDING))
         ).scalar() or 0
-        
+
         text = (
             "📊 آمار کلی\n\n"
             f"👥 کل کاربران: {total_users}\n"
@@ -337,7 +344,7 @@ async def admin_stats_callback(update: Update, context: ContextTypes.DEFAULT_TYP
             f"💰 کل درآمد: {int(total_revenue):,} تومان\n"
             f"⏳ پرداخت‌های در انتظار: {pending_payments}\n"
         )
-        
+
         from bot.admin_keyboards import admin_main_keyboard
         await query.edit_message_text(text, reply_markup=admin_main_keyboard())
 
@@ -350,16 +357,16 @@ async def admin_users_callback(update: Update, context: ContextTypes.DEFAULT_TYP
     user = update.effective_user
     if not user:
         return
-    
+
     async for db in get_db():
         db_user = await db.get(User, user.id)
         if not db_user or db_user.role != UserRole.ADMIN:
             await query.answer("Admin only.", show_alert=True)
             return
-        
+
         res = await db.execute(select(User).order_by(User.id.desc()).limit(100))
         users = list(res.scalars().all())
-        
+
         text = f"👥 لیست کاربران ({len(users)} مورد)\n\n"
         await query.edit_message_text(text, reply_markup=admin_users_list_keyboard(users, page=page))
 
@@ -372,16 +379,16 @@ async def admin_services_callback(update: Update, context: ContextTypes.DEFAULT_
     user = update.effective_user
     if not user:
         return
-    
+
     async for db in get_db():
         db_user = await db.get(User, user.id)
         if not db_user or db_user.role != UserRole.ADMIN:
             await query.answer("Admin only.", show_alert=True)
             return
-        
+
         res = await db.execute(select(Service).order_by(Service.id.desc()).limit(100))
         services = list(res.scalars().all())
-        
+
         text = f"🔧 لیست سرویس‌ها ({len(services)} مورد)\n\n"
         await query.edit_message_text(text, reply_markup=admin_services_list_keyboard(services, page=page))
 
@@ -394,13 +401,13 @@ async def admin_settings_callback(update: Update, context: ContextTypes.DEFAULT_
     user = update.effective_user
     if not user:
         return
-    
+
     async for db in get_db():
         db_user = await db.get(User, user.id)
         if not db_user or db_user.role != UserRole.ADMIN:
             await query.answer("Admin only.", show_alert=True)
             return
-        
+
         text = "⚙️ تنظیمات\n\nلطفاً گزینه مورد نظر را انتخاب کنید:"
         await query.edit_message_text(text, reply_markup=admin_settings_keyboard())
 

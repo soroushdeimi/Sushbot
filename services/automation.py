@@ -5,11 +5,21 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 
 from loguru import logger
-from sqlalchemy import and_, func, or_, select
+from sqlalchemy import func, or_, select
 from telegram.ext import ContextTypes
 
 from config.settings import settings
-from database.models import Admin, Payment, PaymentGateway, PaymentStatus, Purchase, PurchaseStatus, Service, ServiceStatus, User
+from database.models import (
+    Admin,
+    Payment,
+    PaymentGateway,
+    PaymentStatus,
+    Purchase,
+    PurchaseStatus,
+    Service,
+    ServiceStatus,
+    User,
+)
 from database.models.purchase import PurchaseType
 from database.session import AsyncSessionLocal
 from integrations.payments.nowpayments import NowPaymentsGateway
@@ -107,8 +117,8 @@ async def job_payment_reconcile(context: ContextTypes.DEFAULT_TYPE) -> None:
                 # If completed, also complete/fulfill purchase (idempotent)
                 if was_processing and pay.status == PaymentStatus.COMPLETED:
                     from database.models import Purchase, PurchaseStatus
-                    from services.fulfillment import fulfill_purchase
                     from services.affiliate import award_referral_commission_for_purchase
+                    from services.fulfillment import fulfill_purchase
 
                     purchase = await db.get(Purchase, int(pay.purchase_id))
                     if purchase and purchase.status != PurchaseStatus.COMPLETED:

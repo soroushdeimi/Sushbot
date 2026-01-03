@@ -9,8 +9,7 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.deps import AdminLevel, CurrentAdmin, get_current_admin, require_level
-from config.features import is_enabled
+from api.deps import AdminLevel, CurrentAdmin, require_level
 from database.models import Product, User, UserRole
 from database.models.reseller import ResellerPricing, ResellerQuota
 from database.session import get_db

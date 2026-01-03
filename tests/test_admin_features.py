@@ -14,13 +14,10 @@ All tests use mocked database, Telegram API, and Marzban/V2Ray panel.
 
 from __future__ import annotations
 
-import asyncio
-from datetime import datetime, timedelta, timezone
-from typing import Any
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
 
 # =============================================================================
 # FIXTURES
@@ -131,7 +128,7 @@ async def test_format_analytics_message_persian():
         pending_payments=3,
         total_wallet_balance=250000,
         total_bandwidth_gb=100.5,
-        timestamp=datetime.now(timezone.utc),
+        timestamp=datetime.now(UTC),
     )
 
     message = format_analytics_message(analytics, lang="fa")
@@ -149,8 +146,8 @@ async def test_format_analytics_message_persian():
 @pytest.mark.asyncio
 async def test_search_users_by_id(mock_db):
     """Test searching users by Telegram ID."""
-    from services.admin_panel import search_users
     from database.models import User
+    from services.admin_panel import search_users
 
     mock_user = MagicMock(spec=User)
     mock_user.id = 123456789
@@ -169,8 +166,8 @@ async def test_search_users_by_id(mock_db):
 @pytest.mark.asyncio
 async def test_get_user_profile_returns_complete_profile(mock_db):
     """Test that get_user_profile returns a complete UserProfile."""
-    from services.admin_panel import UserProfile, get_user_profile
     from database.models import User, UserRole, UserStatus
+    from services.admin_panel import UserProfile, get_user_profile
 
     mock_user = MagicMock(spec=User)
     mock_user.id = 123456789
@@ -182,7 +179,7 @@ async def test_get_user_profile_returns_complete_profile(mock_db):
     mock_user.balance = 50000
     mock_user.phone = "09123456789"
     mock_user.phone_verified = True
-    mock_user.created_at = datetime.now(timezone.utc)
+    mock_user.created_at = datetime.now(UTC)
 
     mock_db.get = AsyncMock(return_value=mock_user)
     mock_db.scalar = AsyncMock(side_effect=[5, 3, 150000])  # services, purchases, total_spent
@@ -199,8 +196,8 @@ async def test_get_user_profile_returns_complete_profile(mock_db):
 @pytest.mark.asyncio
 async def test_adjust_user_balance_add(mock_db):
     """Test adding balance to user wallet."""
-    from services.admin_panel import adjust_user_balance
     from database.models import User
+    from services.admin_panel import adjust_user_balance
 
     mock_user = MagicMock(spec=User)
     mock_user.id = 123456789
@@ -225,8 +222,8 @@ async def test_adjust_user_balance_add(mock_db):
 @pytest.mark.asyncio
 async def test_adjust_user_balance_deduct_insufficient(mock_db):
     """Test deducting more than available balance fails."""
-    from services.admin_panel import adjust_user_balance
     from database.models import User
+    from services.admin_panel import adjust_user_balance
 
     mock_user = MagicMock(spec=User)
     mock_user.id = 123456789
@@ -248,8 +245,8 @@ async def test_adjust_user_balance_deduct_insufficient(mock_db):
 @pytest.mark.asyncio
 async def test_set_user_status_ban(mock_db):
     """Test banning a user."""
-    from services.admin_panel import set_user_status
     from database.models import User, UserRole, UserStatus
+    from services.admin_panel import set_user_status
 
     mock_user = MagicMock(spec=User)
     mock_user.id = 123456789
@@ -274,8 +271,8 @@ async def test_set_user_status_ban(mock_db):
 @pytest.mark.asyncio
 async def test_cannot_ban_admin_user(mock_db):
     """Test that admin users cannot be banned."""
-    from services.admin_panel import set_user_status
     from database.models import User, UserRole, UserStatus
+    from services.admin_panel import set_user_status
 
     mock_user = MagicMock(spec=User)
     mock_user.id = 999999
@@ -303,8 +300,8 @@ async def test_cannot_ban_admin_user(mock_db):
 @pytest.mark.asyncio
 async def test_check_panel_health_online(mock_db):
     """Test panel health check for an online panel."""
-    from services.admin_panel import PanelHealth, check_panel_health
     from database.models import Panel
+    from services.admin_panel import PanelHealth, check_panel_health
 
     mock_panel = MagicMock(spec=Panel)
     mock_panel.id = 1
@@ -344,8 +341,8 @@ async def test_check_panel_health_online(mock_db):
 @pytest.mark.asyncio
 async def test_check_panel_health_offline(mock_db):
     """Test panel health check for an offline panel."""
-    from services.admin_panel import PanelHealth, check_panel_health
     from database.models import Panel
+    from services.admin_panel import check_panel_health
 
     mock_panel = MagicMock(spec=Panel)
     mock_panel.id = 1
@@ -392,7 +389,6 @@ async def test_check_panel_health_not_found(mock_db):
 async def test_broadcast_message_success(mock_db, mock_bot):
     """Test successful broadcast to all users."""
     from services.admin_panel import BroadcastResult, broadcast_message
-    from database.models import User, UserStatus
 
     # Mock user IDs to broadcast to
     mock_result = MagicMock()
@@ -594,7 +590,7 @@ async def test_list_coupons(mock_db):
     mock_coupon.valid_from = None
     mock_coupon.valid_until = None
     mock_coupon.is_active = True
-    mock_coupon.created_at = datetime.now(timezone.utc)
+    mock_coupon.created_at = datetime.now(UTC)
 
     mock_result = MagicMock()
     mock_result.scalars.return_value.all.return_value = [mock_coupon]
@@ -824,7 +820,7 @@ async def test_user_info_command(mock_update, mock_context):
                 balance=50000,
                 phone="09123456789",
                 phone_verified=True,
-                created_at=datetime.now(timezone.utc),
+                created_at=datetime.now(UTC),
                 services_count=2,
                 purchases_count=3,
                 total_spent=150000,

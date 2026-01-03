@@ -2,20 +2,22 @@
 
 from __future__ import annotations
 
-from contextlib import asynccontextmanager
-
 from loguru import logger
 from telegram import Update
 from telegram.ext import Application, ContextTypes
 
 from config.settings import settings
-from database.session import close_db, init_db
+from database.session import AsyncSessionLocal, close_db, init_db
 from handlers import register_handlers
+from services.automation import (
+    job_admin_daily_report,
+    job_cleanup,
+    job_expiry_and_traffic_reminders,
+    job_payment_reconcile,
+)
 from services.bootstrap import bootstrap_seed_data
-from services.usage_sync import job_sync_usage
-from database.session import AsyncSessionLocal
-from services.automation import job_admin_daily_report, job_cleanup, job_expiry_and_traffic_reminders, job_payment_reconcile
 from services.migrations import run_migrations
+from services.usage_sync import job_sync_usage
 
 
 async def post_init(application: Application) -> None:

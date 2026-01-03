@@ -13,7 +13,6 @@ from bot.admin_keyboards import (
 )
 from database.models import Service, User
 from database.session import get_db
-from loguru import logger
 
 
 async def admin_users_list_callback(update: Update, context: ContextTypes.DEFAULT_TYPE, page: int = 0) -> None:

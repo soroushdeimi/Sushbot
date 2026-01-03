@@ -11,7 +11,7 @@ Tests:
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -19,7 +19,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 if TYPE_CHECKING:
-    from sqlalchemy.ext.asyncio import AsyncSession
+    pass
 
 
 # =============================================================================
@@ -59,8 +59,8 @@ def mock_user() -> MagicMock:
     user.balance = Decimal("50000")
     user.phone = "989123456789"
     user.phone_verified = True
-    user.created_at = datetime.now(timezone.utc) - timedelta(days=30)
-    user.updated_at = datetime.now(timezone.utc)
+    user.created_at = datetime.now(UTC) - timedelta(days=30)
+    user.updated_at = datetime.now(UTC)
     return user
 
 
@@ -113,7 +113,7 @@ def mock_purchase() -> MagicMock:
     purchase.duration_days = 30
     purchase.traffic_gb = 50
     purchase.protocol = "vmess"
-    purchase.created_at = datetime.now(timezone.utc)
+    purchase.created_at = datetime.now(UTC)
     return purchase
 
 
@@ -129,7 +129,7 @@ def mock_service() -> MagicMock:
     service.client_email = "test@vpn.local"
     service.status = ServiceStatus.ACTIVE
     service.protocol = "vmess"
-    service.expiry_date = datetime.now(timezone.utc) + timedelta(days=30)
+    service.expiry_date = datetime.now(UTC) + timedelta(days=30)
     service.total_traffic_gb = 50
     service.used_traffic = 0
     service.remaining_traffic_gb = 50.0
@@ -386,7 +386,7 @@ async def test_format_analytics_message_fa():
         pending_payments=3,
         total_wallet_balance=750000,
         total_bandwidth_gb=1.5,
-        timestamp=datetime.now(timezone.utc),
+        timestamp=datetime.now(UTC),
     )
 
     message = format_analytics_message(analytics, lang="fa")

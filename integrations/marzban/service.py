@@ -227,7 +227,7 @@ class MarzbanService(VPNPanelInterface):
         """Rotate user's proxy credentials."""
         try:
             # Marzban revokes subscription which rotates all credentials
-            result = await self._client.revoke_subscription(username=username)
+            await self._client.revoke_subscription(username=username)
 
             # Get updated user data to return proxy_settings
             user_data = await self._client.get_user(username=username)
@@ -255,7 +255,7 @@ class MarzbanService(VPNPanelInterface):
         # For Marzban, we use subscription URL which contains all protocols
         # But if a specific protocol is requested, we can extract it
         subscription_url = await self.get_subscription_url(username=username)
-        
+
         # If protocol-specific link is needed, return subscription URL
         # (Marzban subscription URLs contain all protocols)
         return subscription_url

@@ -10,7 +10,7 @@ from telegram.ext import ContextTypes
 from config.features import is_enabled
 from config.settings import settings
 from database.models import User
-from utils.i18n import Language, get_user_language, t
+from utils.i18n import get_user_language, t
 
 
 @dataclass(frozen=True, slots=True)

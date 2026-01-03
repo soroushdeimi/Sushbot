@@ -12,9 +12,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from api.audit import audit
 from config.features import is_enabled
 from database.models import Panel, Purchase, PurchaseStatus, Service, ServiceStatus
-from database.models.purchase import PurchaseType
 from database.models.wallet import WalletTransaction, WalletTxType
-from integrations.exceptions import PanelError, PanelConnectionError, PanelUserNotFoundError
+from integrations.exceptions import PanelConnectionError, PanelError, PanelUserNotFoundError
 from integrations.factory import PanelFactory
 from services.wallet import apply_wallet_tx
 

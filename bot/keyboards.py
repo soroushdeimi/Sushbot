@@ -38,11 +38,11 @@ def main_reply_keyboard(user: User | None = None) -> ReplyKeyboardMarkup:
     """Persistent keyboard - only shows Menu button to avoid duplication."""
     lang = get_user_language(user)
     kb: list[list[KeyboardButton]] = []
-    
+
     # Only add a single "Menu" button to the reply keyboard
     menu_button_text = t("menu", user, lang)
     kb.append([KeyboardButton(menu_button_text)])
-    
+
     return ReplyKeyboardMarkup(kb, resize_keyboard=True, is_persistent=True, input_field_placeholder=t("choose_option", user, lang))
 
 

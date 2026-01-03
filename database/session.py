@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, AsyncGenerator
+from collections.abc import AsyncGenerator
+from typing import TYPE_CHECKING
 from urllib.parse import urlparse, urlunparse
 
 from sqlalchemy.ext.asyncio import (

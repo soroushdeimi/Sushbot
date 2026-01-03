@@ -4,28 +4,28 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 
-from sqlalchemy.ext.asyncio import AsyncSession
 from loguru import logger
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.settings import settings
 from database.models import Panel, Product, Purchase, PurchaseStatus, Service, ServiceStatus, User
 from database.models.service import ServiceType
-from integrations.exceptions import PanelError, PanelConnectionError, PanelUserNotFoundError
+from integrations.exceptions import PanelConnectionError, PanelError, PanelUserNotFoundError
 from integrations.factory import PanelFactory
 from services.panel_utils import check_panel_capacity
+from services.subscription import ensure_service_sub_token
 from utils.panel_username import make_panel_username
-from services.subscription import ensure_service_sub_token, subscription_url_from_token
 
 
 async def provision_purchase(db: AsyncSession, *, purchase: Purchase) -> Service:
     """
     Idempotently provision a service for a paid purchase.
-    
+
     This function creates a VPN service on the configured panel for a completed purchase.
     It handles user creation on the panel, generates configuration links, and creates
     the service record in the database. The operation is idempotent - if a service
     already exists for this purchase, it returns the existing service.
-    
+
     Assumes Purchase.status is COMPLETED (or being completed within same transaction).
 
     Args:
@@ -80,7 +80,7 @@ async def provision_purchase(db: AsyncSession, *, purchase: Purchase) -> Service
     panel_service = None
     try:
         panel_service = await PanelFactory.create_panel(panel)
-        
+
         # Calculate expiration timestamp
         expire_ts: int | None = None
         if product.duration_days and product.duration_days > 0:
@@ -93,7 +93,7 @@ async def provision_purchase(db: AsyncSession, *, purchase: Purchase) -> Service
 
         # Create user on panel
         try:
-            user_info = await panel_service.create_user(
+            await panel_service.create_user(
                 username=username,
                 expire_ts=expire_ts,
                 data_limit_bytes=data_limit_bytes,
@@ -167,23 +167,23 @@ async def provision_purchase(db: AsyncSession, *, purchase: Purchase) -> Service
         notes=f"Provisioned from purchase_id={purchase.id}",
     )
     db.add(svc)
-    
+
     # Inventory: consume reserved unit on successful provisioning (before commit).
     if product.stock_quantity is not None:
         from config.features import is_enabled
         if is_enabled("inventory"):
             from services.inventory import consume_stock
             await consume_stock(db, product_id=product.id, qty=1)
-    
+
     # Update purchase
     purchase.service_id = svc.id
     purchase.status = PurchaseStatus.COMPLETED
     purchase.completed_at = now
-    
+
     # Single commit for all operations (atomic transaction)
     await db.commit()
     await db.refresh(svc)
-    
+
     try:
         await ensure_service_sub_token(db, svc)
     except Exception:

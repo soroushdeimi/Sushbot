@@ -11,8 +11,8 @@ from sqlalchemy import select
 from config.settings import settings
 from database.models import Payment, PaymentGateway, PaymentStatus, Purchase, PurchaseStatus
 from database.session import AsyncSessionLocal
-from integrations.payments.nowpayments import NowPaymentsGateway
 from integrations.payments.aqayepardakht import AqayepardakhtGateway
+from integrations.payments.nowpayments import NowPaymentsGateway
 
 router = APIRouter()
 
@@ -132,8 +132,8 @@ async def nowpayments_webhook(
         if completed_now:
             # Best-effort: fulfill immediately + affiliate commission (both idempotent).
             try:
-                from services.fulfillment import fulfill_purchase
                 from services.affiliate import award_referral_commission_for_purchase
+                from services.fulfillment import fulfill_purchase
 
                 await fulfill_purchase(db, purchase=purchase)
                 await award_referral_commission_for_purchase(db, purchase=purchase)
@@ -242,8 +242,8 @@ async def aqayepardakht_webhook(request: Request) -> HTMLResponse:
         if ok:
             # Best-effort fulfillment
             try:
-                from services.fulfillment import fulfill_purchase
                 from services.affiliate import award_referral_commission_for_purchase
+                from services.fulfillment import fulfill_purchase
 
                 await fulfill_purchase(db, purchase=purchase)
                 await award_referral_commission_for_purchase(db, purchase=purchase)

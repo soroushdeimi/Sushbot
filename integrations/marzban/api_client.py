@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -171,7 +170,7 @@ class MarzbanAPIClient:
                 # Token expired, clear it and try to refresh
                 self._token = None
                 self._token_expires_at = None
-                
+
                 # If we have username/password, try to re-authenticate
                 if self.username and self.password:
                     try:
@@ -197,7 +196,7 @@ class MarzbanAPIClient:
                     except Exception:
                         # If retry fails, raise authentication error
                         pass
-                
+
                 raise PanelAuthenticationError(
                     f"Marzban authentication failed: {error_detail}",
                 ) from e

@@ -8,9 +8,24 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 
+from api.routes import (
+    admin,
+    auth,
+    panels,
+    payments,
+    product_categories,
+    products,
+    refunds,
+    reports,
+    resellers,
+    services,
+    subscription,
+    tickets,
+    transfers,
+    users,
+)
 from config.settings import settings
 from database.session import close_db, init_db
-from api.routes import admin, auth, panels, payments, product_categories, products, reports, refunds, resellers, services, subscription, tickets, transfers, users
 from services.migrations import run_migrations
 
 

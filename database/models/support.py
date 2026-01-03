@@ -4,12 +4,16 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
+from typing import TYPE_CHECKING
 
 from sqlalchemy import BigInteger, Boolean, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base, TimestampMixin
 from .support_message import SupportMessage
+
+if TYPE_CHECKING:
+    from .user import User
 
 
 class TicketStatus(str, Enum):
@@ -31,8 +35,8 @@ class SupportTicket(Base, TimestampMixin):
     user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False, index=True)
 
     # Relationship
-    user: Mapped["User"] = relationship("User", back_populates="support_tickets")
-    messages: Mapped[list["SupportMessage"]] = relationship(
+    user: Mapped[User] = relationship("User", back_populates="support_tickets")
+    messages: Mapped[list[SupportMessage]] = relationship(
         "SupportMessage",
         back_populates="ticket",
         lazy="selectin",

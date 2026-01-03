@@ -11,8 +11,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .base import Base, SoftDeleteMixin, TimestampMixin
 
 if TYPE_CHECKING:
-    from .service import Service
     from .product import Product
+    from .service import Service
 
 
 class PanelStatus(str, Enum):
@@ -33,19 +33,19 @@ class Panel(Base, TimestampMixin, SoftDeleteMixin):
 
     name: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
     api_url: Mapped[str] = mapped_column(String(500), nullable=False)
-    
+
     # Encrypted credentials (api_key can be token or username:password)
     # For PasarGuard: not used (direct DB access)
     # For Marzban: can be token or username:password (encrypted)
     api_key: Mapped[str] = mapped_column(Text, nullable=False)  # Encrypted credentials
-    
+
     # For PasarGuard: node_id is required
     # For Marzban: not used
     node_id: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    
+
     # Panel type (pasarguard, marzban, etc.)
     type: Mapped[str | None] = mapped_column(String(50), nullable=True, default=None)
-    
+
     # Additional fields for Marzban
     username: Mapped[str | None] = mapped_column(String(255), nullable=True)  # Optional, can be in api_key
     password: Mapped[str | None] = mapped_column(Text, nullable=True)  # Optional, encrypted if set
@@ -71,11 +71,11 @@ class Panel(Base, TimestampMixin, SoftDeleteMixin):
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Relationships
-    services: Mapped[list["Service"]] = relationship("Service", back_populates="panel", lazy="selectin")
-    products: Mapped[list["Product"]] = relationship(
-        "Product", 
+    services: Mapped[list[Service]] = relationship("Service", back_populates="panel", lazy="selectin")
+    products: Mapped[list[Product]] = relationship(
+        "Product",
         foreign_keys="[Product.panel_id]",
-        back_populates="panel", 
+        back_populates="panel",
         lazy="selectin"
     )
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, Boolean, ForeignKey, Integer, String
+from sqlalchemy import BigInteger, Boolean, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base, TimestampMixin
@@ -38,7 +38,7 @@ class TrialAccount(Base, TimestampMixin):
     config_link: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
     # Relationships
-    user: Mapped["User"] = relationship("User", back_populates="trial_accounts")
+    user: Mapped[User] = relationship("User", back_populates="trial_accounts")
 
     def __repr__(self) -> str:
         return f"<TrialAccount(id={self.id}, user_id={self.user_id}, is_used={self.is_used})>"

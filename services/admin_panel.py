@@ -12,13 +12,12 @@ Provides:
 from __future__ import annotations
 
 import asyncio
-import json
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
-from typing import TYPE_CHECKING, Any
+from datetime import UTC, datetime, timedelta
+from typing import TYPE_CHECKING
 
 from loguru import logger
-from sqlalchemy import and_, delete, func, or_, select, update
+from sqlalchemy import and_, func, or_, select
 
 from database.models import (
     DiscountCode,
@@ -34,7 +33,6 @@ from database.models import (
     UserRole,
     UserStatus,
 )
-from database.session import get_db
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
@@ -136,13 +134,13 @@ class CouponInfo:
 # =============================================================================
 
 
-async def get_live_analytics(db: "AsyncSession") -> AnalyticsSnapshot:
+async def get_live_analytics(db: AsyncSession) -> AnalyticsSnapshot:
     """
     Get comprehensive live analytics for the admin dashboard.
 
     Returns real-time statistics about users, revenue, services, and bandwidth.
     """
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     week_start = today_start - timedelta(days=now.weekday())
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
@@ -299,7 +297,7 @@ def format_analytics_message(analytics: AnalyticsSnapshot, lang: str = "fa") -> 
 
 
 async def search_users(
-    db: "AsyncSession",
+    db: AsyncSession,
     query: str,
     limit: int = 20,
 ) -> list[User]:
@@ -339,7 +337,7 @@ async def search_users(
     return list(result.scalars().all())
 
 
-async def get_user_profile(db: "AsyncSession", user_id: int) -> UserProfile | None:
+async def get_user_profile(db: AsyncSession, user_id: int) -> UserProfile | None:
     """
     Get detailed user profile for admin view.
 
@@ -392,7 +390,7 @@ async def get_user_profile(db: "AsyncSession", user_id: int) -> UserProfile | No
 
 
 async def adjust_user_balance(
-    db: "AsyncSession",
+    db: AsyncSession,
     user_id: int,
     amount: float,
     admin_id: int,
@@ -434,7 +432,7 @@ async def adjust_user_balance(
 
 
 async def set_user_status(
-    db: "AsyncSession",
+    db: AsyncSession,
     user_id: int,
     status: UserStatus,
     admin_id: int,
@@ -477,7 +475,7 @@ async def set_user_status(
 # =============================================================================
 
 
-async def check_panel_health(db: "AsyncSession", panel_id: int) -> PanelHealth:
+async def check_panel_health(db: AsyncSession, panel_id: int) -> PanelHealth:
     """
     Check connectivity and health of a specific panel.
 
@@ -581,7 +579,7 @@ async def check_panel_health(db: "AsyncSession", panel_id: int) -> PanelHealth:
         )
 
 
-async def check_all_panels_health(db: "AsyncSession") -> list[PanelHealth]:
+async def check_all_panels_health(db: AsyncSession) -> list[PanelHealth]:
     """
     Check health of all active panels.
 
@@ -629,8 +627,8 @@ def format_health_report(health_results: list[PanelHealth], lang: str = "fa") ->
 
 
 async def broadcast_message(
-    bot: "Bot",
-    db: "AsyncSession",
+    bot: Bot,
+    db: AsyncSession,
     message_text: str,
     *,
     exclude_banned: bool = True,
@@ -726,7 +724,7 @@ async def broadcast_message(
 
 
 async def create_coupon(
-    db: "AsyncSession",
+    db: AsyncSession,
     code: str,
     discount_type: str,  # "percentage" or "fixed"
     discount_value: float,
@@ -787,7 +785,7 @@ async def create_coupon(
 
 
 async def delete_coupon(
-    db: "AsyncSession",
+    db: AsyncSession,
     code: str,
     admin_id: int | None = None,
 ) -> tuple[bool, str]:
@@ -816,7 +814,7 @@ async def delete_coupon(
 
 
 async def toggle_coupon(
-    db: "AsyncSession",
+    db: AsyncSession,
     code: str,
     admin_id: int | None = None,
 ) -> tuple[bool, str]:
@@ -846,7 +844,7 @@ async def toggle_coupon(
 
 
 async def list_coupons(
-    db: "AsyncSession",
+    db: AsyncSession,
     include_inactive: bool = False,
     include_expired: bool = False,
 ) -> list[CouponInfo]:
@@ -864,10 +862,10 @@ async def list_coupons(
     query = select(DiscountCode)
 
     if not include_inactive:
-        query = query.where(DiscountCode.is_active == True)
+        query = query.where(DiscountCode.is_active)
 
     if not include_expired:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         query = query.where(
             or_(
                 DiscountCode.valid_until.is_(None),

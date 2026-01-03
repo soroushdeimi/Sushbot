@@ -8,7 +8,6 @@ from sqlalchemy import BigInteger, Boolean, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .base import Base, TimestampMixin
-from .user import User
 
 
 class AdminLevel(str, Enum):

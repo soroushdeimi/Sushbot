@@ -12,10 +12,11 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .base import Base, SoftDeleteMixin, TimestampMixin
 
 if TYPE_CHECKING:
-    from .user_state import UserState
     from .purchase import Purchase
-    from .trial import TrialAccount
+    from .service import Service
     from .support import SupportTicket
+    from .trial import TrialAccount
+    from .user_state import UserState
 
 
 class UserRole(str, Enum):
@@ -66,11 +67,11 @@ class User(Base, TimestampMixin, SoftDeleteMixin):
     last_activity: Mapped[datetime | None] = mapped_column(nullable=True)
 
     # Relationships
-    services: Mapped[list["Service"]] = relationship("Service", back_populates="user", lazy="selectin")
-    purchases: Mapped[list["Purchase"]] = relationship("Purchase", back_populates="user", lazy="selectin")
-    trial_accounts: Mapped[list["TrialAccount"]] = relationship("TrialAccount", back_populates="user", lazy="selectin")
-    support_tickets: Mapped[list["SupportTicket"]] = relationship("SupportTicket", back_populates="user", lazy="selectin")
-    state: Mapped["UserState | None"] = relationship(
+    services: Mapped[list[Service]] = relationship("Service", back_populates="user", lazy="selectin")
+    purchases: Mapped[list[Purchase]] = relationship("Purchase", back_populates="user", lazy="selectin")
+    trial_accounts: Mapped[list[TrialAccount]] = relationship("TrialAccount", back_populates="user", lazy="selectin")
+    support_tickets: Mapped[list[SupportTicket]] = relationship("SupportTicket", back_populates="user", lazy="selectin")
+    state: Mapped[UserState | None] = relationship(
         "UserState",
         back_populates="user",
         uselist=False,

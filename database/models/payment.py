@@ -6,7 +6,7 @@ from datetime import datetime
 from enum import Enum
 from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, ForeignKey, Integer, Numeric, String, Text, UniqueConstraint
+from sqlalchemy import ForeignKey, Numeric, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base, TimestampMixin
@@ -68,7 +68,7 @@ class Payment(Base, TimestampMixin):
     admin_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Relationships
-    purchase: Mapped["Purchase"] = relationship("Purchase", back_populates="payments")
+    purchase: Mapped[Purchase] = relationship("Purchase", back_populates="payments")
 
     def __repr__(self) -> str:
         return f"<Payment(id={self.id}, gateway={self.gateway}, status={self.status})>"

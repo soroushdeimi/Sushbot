@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import time
 from collections import defaultdict
-from typing import Callable, Final
+from collections.abc import Callable
+from typing import Final
 
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware

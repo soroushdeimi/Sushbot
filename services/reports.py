@@ -5,11 +5,20 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 from typing import Any
 
-from sqlalchemy import and_, func, select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from database.models import Payment, PaymentGateway, PaymentStatus, Purchase, PurchaseStatus, Service, ServiceStatus, TrialAccount, User
+from database.models import (
+    Payment,
+    PaymentStatus,
+    Purchase,
+    PurchaseStatus,
+    Service,
+    ServiceStatus,
+    TrialAccount,
+    User,
+)
 from database.models.purchase import PurchaseType
 
 

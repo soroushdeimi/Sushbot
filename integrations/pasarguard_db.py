@@ -13,7 +13,6 @@ from urllib.parse import quote, urlencode, urlparse, urlunparse
 import asyncpg
 from cryptography.hazmat.primitives.asymmetric import x25519
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
-from loguru import logger
 
 from config.settings import settings
 
@@ -34,7 +33,7 @@ class PasarGuardDBClient:
             parsed = urlparse(settings.database_url)
             # Remove the +asyncpg driver prefix if present (asyncpg doesn't use it)
             scheme = parsed.scheme.split("+")[0]  # postgresql+asyncpg -> postgresql
-            
+
             # Change database name from sushbotseller to pasarguard
             path_parts = parsed.path.strip("/").split("/")
             if path_parts and path_parts[0]:
@@ -44,9 +43,9 @@ class PasarGuardDBClient:
                 else:
                     # If database name is different, assume it should be pasarguard
                     path_parts[0] = "pasarguard"
-            
+
             db_url = urlunparse(parsed._replace(scheme=scheme, path="/" + "/".join(path_parts)))
-        
+
         self.db_url = db_url
         self.node_id = node_id or settings.pasarguard_node_id
         self._pool: asyncpg.Pool | None = None
@@ -118,7 +117,7 @@ class PasarGuardDBClient:
         inbound = await self.get_inbound_by_tag(tag)
         if inbound:
             return inbound
-        
+
         pool = await self._get_pool()
         async with pool.acquire() as conn:
             inbound_id = await conn.fetchval(
@@ -133,10 +132,10 @@ class PasarGuardDBClient:
         async with pool.acquire() as conn:
             rows = await conn.fetch(
                 """
-                SELECT id, remark, address, port, inbound_tag, sni, host, security, 
-                       fingerprint, allowinsecure, is_disabled, path, 
+                SELECT id, remark, address, port, inbound_tag, sni, host, security,
+                       fingerprint, allowinsecure, is_disabled, path,
                        transport_settings, mux_settings, noise_settings, fragment_settings
-                FROM hosts 
+                FROM hosts
                 WHERE inbound_tag = $1 AND is_disabled = FALSE
                 ORDER BY priority ASC
                 LIMIT 1
@@ -442,7 +441,7 @@ class PasarGuardDBClient:
             host_id = await conn.fetchval(
                 """
                 INSERT INTO hosts (
-                    remark, address, port, inbound_tag, sni, host, 
+                    remark, address, port, inbound_tag, sni, host,
                     security, fingerprint, priority
                 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 0)
                 RETURNING id
@@ -532,7 +531,7 @@ class PasarGuardDBClient:
             if not row:
                 raise ValueError(f"Inbound {inbound_id} not found")
             inbound_tag = row["tag"]
-        
+
         return await self.get_or_create_client(inbound_tag, email, uuid)
 
     async def get_inbound(self, inbound_id: int) -> dict[str, Any]:
@@ -565,13 +564,13 @@ class PasarGuardDBClient:
         hosts = await self.get_hosts_by_inbound_tag(inbound_tag)
         if not hosts:
             raise ValueError(f"No host found for inbound tag: {inbound_tag}")
-        
+
         host = hosts[0]
         address = host["address"]
         port = host["port"]
         fingerprint = host.get("fingerprint") or "firefox"
         sni = host.get("sni") or host.get("host")
-        
+
         protocol = (protocol or "vless").lower()
 
         # Fetch proxy_settings from DB if not provided (PasarGuard stores it per username).
@@ -599,7 +598,7 @@ class PasarGuardDBClient:
                 vless_uuid = (proxy_settings.get("vless") or {}).get("id")
             if not vless_uuid:
                 raise ValueError("Missing vless uuid for user")
-            
+
             # Build query parameters properly (URL-encoded like PasarGuard panel does)
             query_params = {
                 "encryption": "none",
@@ -613,10 +612,10 @@ class PasarGuardDBClient:
                 "headerType": "none",
             }
             query_string = urlencode(query_params)
-            
+
             # URL-encode the email fragment (like PasarGuard panel does)
             encoded_email = quote(email)
-            
+
             config = f"vless://{vless_uuid}@{address}:{port}?{query_string}#{encoded_email}"
             return config
 
@@ -661,7 +660,7 @@ class PasarGuardDBClient:
             pw = ss.get("password")
             if not pw:
                 raise ValueError("Missing shadowsocks password for user")
-            userinfo = base64.urlsafe_b64encode(f"{method}:{pw}".encode("utf-8")).decode().rstrip("=")
+            userinfo = base64.urlsafe_b64encode(f"{method}:{pw}".encode()).decode().rstrip("=")
             encoded_email = quote(email)
             return f"ss://{userinfo}@{address}:{port}#{encoded_email}"
 

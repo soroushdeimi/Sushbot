@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -89,7 +89,7 @@ async def create_category(
         parent = await db.get(ProductCategory, body.parent_id)
         if not parent:
             raise HTTPException(status_code=400, detail=f"Parent category {body.parent_id} not found")
-    
+
     category = ProductCategory(**body.model_dump())
     db.add(category)
     await db.commit()
@@ -119,7 +119,7 @@ async def update_category(
     category = await db.get(ProductCategory, category_id)
     if not category:
         raise HTTPException(status_code=404, detail="Category not found")
-    
+
     # Validate parent_id if provided
     if body.parent_id is not None:
         if body.parent_id == category_id:
@@ -128,7 +128,7 @@ async def update_category(
             parent = await db.get(ProductCategory, body.parent_id)
             if not parent:
                 raise HTTPException(status_code=400, detail=f"Parent category {body.parent_id} not found")
-    
+
     data = body.model_dump(exclude_unset=True)
     for k, v in data.items():
         setattr(category, k, v)
@@ -158,7 +158,7 @@ async def delete_category(
     category = await db.get(ProductCategory, category_id)
     if not category:
         raise HTTPException(status_code=404, detail="Category not found")
-    
+
     # Soft delete
     from datetime import datetime
     category.deleted_at = datetime.utcnow()

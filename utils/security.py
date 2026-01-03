@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import hashlib
 import secrets
+from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from enum import Enum
 from functools import wraps
-from typing import TYPE_CHECKING, Any, Callable, ParamSpec, TypeVar
+from typing import TYPE_CHECKING, Any, ParamSpec, TypeVar
 
 from jose import jwt
 from loguru import logger
@@ -18,7 +19,6 @@ from config.settings import settings
 
 if TYPE_CHECKING:
     from telegram import Update
-    from telegram.ext import ContextTypes
 
 P = ParamSpec("P")
 R = TypeVar("R")
@@ -92,8 +92,8 @@ async def check_admin_status(user_id: int, *, check_env_first: bool = True) -> A
             return env_result
 
     # Slow path: check database
-    from database.session import get_db
     from database.models import Admin, User, UserRole
+    from database.session import get_db
 
     try:
         async for db in get_db():
@@ -235,7 +235,7 @@ def admin_required(
     return decorator
 
 
-async def _send_denial_message(update: "Update", message: str) -> None:
+async def _send_denial_message(update: Update, message: str) -> None:
     """Send denial message to user (handles both messages and callbacks)."""
     try:
         if update.callback_query:
@@ -296,9 +296,9 @@ def generate_token(data: dict[str, Any], expires_delta: timedelta | None = None)
     """Generate JWT token."""
     to_encode = data.copy()
     if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
+        expire = datetime.now(UTC) + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(hours=24)
+        expire = datetime.now(UTC) + timedelta(hours=24)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, settings.jwt_secret, algorithm="HS256")
     return encoded_jwt
@@ -350,7 +350,7 @@ def hash_sensitive_data(data: str) -> str:
 
 def generate_tracking_code() -> str:
     """Generate unique tracking code for payments."""
-    timestamp = int(datetime.now(timezone.utc).timestamp())
+    timestamp = int(datetime.now(UTC).timestamp())
     random_part = secrets.token_urlsafe(8)[:8]
     return f"{timestamp}{random_part}".upper()
 

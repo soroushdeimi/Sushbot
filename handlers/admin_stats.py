@@ -2,17 +2,23 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from sqlalchemy import func, select
 from telegram import Update
 from telegram.ext import ContextTypes
 
 from bot.admin_keyboards import admin_main_keyboard
-from database.models import Payment, PaymentStatus, Purchase, PurchaseStatus, Service, ServiceStatus, User
-from database.models.purchase import PurchaseType
+from database.models import (
+    Payment,
+    PaymentStatus,
+    Purchase,
+    PurchaseStatus,
+    Service,
+    ServiceStatus,
+    User,
+)
 from database.session import get_db
-from loguru import logger
 
 
 async def admin_stats_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

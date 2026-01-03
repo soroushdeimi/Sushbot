@@ -35,7 +35,7 @@ class WalletTransaction(Base, TimestampMixin):
     ref: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True)
     note: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    user: Mapped["User"] = relationship("User", lazy="selectin")
+    user: Mapped[User] = relationship("User", lazy="selectin")
 
 
 

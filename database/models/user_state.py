@@ -42,7 +42,7 @@ class UserState(Base, TimestampMixin):
         index=True,
     )
 
-    user: Mapped["User"] = relationship("User", back_populates="state")
+    user: Mapped[User] = relationship("User", back_populates="state")
 
 
 

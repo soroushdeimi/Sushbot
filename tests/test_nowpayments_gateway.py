@@ -6,7 +6,8 @@ def test_nowpayments_verify_webhook_raw():
 
     gw = NowPaymentsGateway(api_key="x", ipn_secret="secret")
     raw = b'{"a":1}'
-    import hmac, hashlib
+    import hashlib
+    import hmac
 
     sig = hmac.new(b"secret", raw, hashlib.sha512).hexdigest()
     assert gw.verify_webhook_raw(raw_body=raw, signature=sig) is True

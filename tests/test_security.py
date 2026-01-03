@@ -14,7 +14,6 @@ Tests:
 
 from __future__ import annotations
 
-from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -29,7 +28,6 @@ from utils.security import (
     super_admin_required,
     support_admin_required,
 )
-
 
 # =============================================================================
 # FIXTURES

@@ -39,7 +39,7 @@ class ServiceConfiguration(Base, TimestampMixin):
     version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
 
     # Relationships
-    service: Mapped["Service"] = relationship("Service", back_populates="configurations")
+    service: Mapped[Service] = relationship("Service", back_populates="configurations")
 
     def __repr__(self) -> str:
         return f"<ServiceConfiguration(id={self.id}, service_id={self.service_id}, protocol={self.protocol})>"
